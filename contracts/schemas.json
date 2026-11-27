@@ -1,0 +1,486 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$comment": "TrafficSense — Canonical Data Contracts (Phase 0). All inter-module payloads must conform to these schemas. Version: 1.0.0",
+  "version": "1.0.0",
+  "last_updated": "2026-11-27",
+
+  "definitions": {
+
+    "NormalizedEvent": {
+      "$comment": "Output of the Signal Normalizer / Adapter. Every ingested signal (CCTV, telemetry, complaint, weather) is converted to this shape before being passed to the decision engine.",
+      "type": "object",
+      "required": ["event_id", "segment_id", "signal_type", "value", "unit", "source", "source_weight", "timestamp"],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "UUID v4 assigned by the Signal Normalizer at ingest time."
+        },
+        "segment_id": {
+          "type": "string",
+          "pattern": "^SEG_\\d{3}$",
+          "description": "Road segment identifier, e.g. SEG_001."
+        },
+        "signal_type": {
+          "type": "string",
+          "enum": [
+            "speed_drop",
+            "stopped_vehicle",
+            "complaint",
+            "cctv_anomaly",
+            "rain_threshold_crossed",
+            "fleet_stop",
+            "fleet_speed_drop",
+            "authority_action"
+          ],
+          "description": "Semantic type of the detected signal."
+        },
+        "value": {
+          "type": "number",
+          "description": "Numeric payload: speed in km/h, stopped duration in seconds, rain in mm, anomaly confidence 0–1, complaint count, etc."
+        },
+        "unit": {
+          "type": "string",
+          "enum": ["kmh", "seconds", "mm", "confidence", "count", "category"],
+          "description": "Unit of the value field."
+        },
+        "source": {
+          "type": "string",
+          "enum": ["telemetry", "cctv", "complaint", "weather", "authority", "simulator"],
+          "description": "Origin system that produced this event."
+        },
+        "source_weight": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 2.0,
+          "description": "Trust multiplier applied during confidence scoring. Fleet vehicles = 1.5, CCTV = 1.3, complaint = 1.0, telemetry = 1.0, weather = 0.8."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 UTC timestamp of the original signal."
+        },
+        "meta": {
+          "type": "object",
+          "description": "Optional extra context (vehicle_type, complaint_category, photo_url, etc.). Free-form but should be JSON-serialisable.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "RoadSegment": {
+      "$comment": "Static road segment definition. Stored in SQLite and seeded from /seed/segments.json. Treated as read-only at runtime unless an authority action changes 'has_cctv'.",
+      "type": "object",
+      "required": ["segment_id", "name", "lat_start", "lon_start", "lat_end", "lon_end", "has_cctv", "baseline_speed_kmh", "flood_prone"],
+      "properties": {
+        "segment_id": {
+          "type": "string",
+          "pattern": "^SEG_\\d{3}$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable road/stretch name."
+        },
+        "lat_start": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lon_start": { "type": "number", "minimum": -180, "maximum": 180 },
+        "lat_end":   { "type": "number", "minimum": -90, "maximum": 90 },
+        "lon_end":   { "type": "number", "minimum": -180, "maximum": 180 },
+        "has_cctv": {
+          "type": "boolean",
+          "description": "True = this segment already has existing CCTV — cctv_runner.py targets this segment."
+        },
+        "baseline_speed_kmh": {
+          "type": "object",
+          "description": "Expected average speed (km/h) keyed by hour-of-day string '00'–'23'. Unlisted hours use nearest neighbour.",
+          "patternProperties": {
+            "^([01]\\d|2[0-3])$": { "type": "number", "minimum": 0, "maximum": 120 }
+          },
+          "additionalProperties": false
+        },
+        "flood_prone": {
+          "type": "boolean",
+          "description": "True = historically floods; enables the Flood Risk (YELLOW) Evaluator for this segment."
+        },
+        "flood_rain_threshold_mm": {
+          "type": ["number", "null"],
+          "description": "Rainfall (mm/hr) at which YELLOW flood-risk is raised. Null if flood_prone is false."
+        },
+        "flood_severe_threshold_mm": {
+          "type": ["number", "null"],
+          "description": "Rainfall (mm/hr) at which the evaluator directly contributes to RED confidence. Null if flood_prone is false."
+        },
+        "road_type": {
+          "type": "string",
+          "enum": ["arterial", "collector", "local", "underpass", "bridge"],
+          "description": "Road classification — affects priority scoring weights."
+        },
+        "speed_limit_kmh": {
+          "type": "number",
+          "description": "Posted speed limit on this segment."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "CentralState": {
+      "$comment": "Single source of truth for a road segment's live status. Written by the decision engine and authority actions; read by both UIs and the rerouting block.",
+      "type": "object",
+      "required": ["segment_id", "state", "stage", "confidence", "reason", "updated_at"],
+      "properties": {
+        "segment_id": {
+          "type": "string",
+          "pattern": "^SEG_\\d{3}$"
+        },
+        "state": {
+          "type": "string",
+          "enum": ["GREEN", "YELLOW", "RED"],
+          "description": "GREEN = normal, YELLOW = early alert / flood risk, RED = confirmed disruption."
+        },
+        "stage": {
+          "type": "integer",
+          "enum": [0, 1, 2],
+          "description": "0 = no alert (GREEN), 1 = Early Alert (first signals seen), 2 = Confirmed (multi-signal reinforced)."
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Composite confidence score from the Two-Stage Escalation Block (0 = no evidence, 1 = fully confirmed)."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Comma-separated list of contributing signals, e.g. 'flood_risk,speed_drop,cctv_anomaly'."
+        },
+        "disruption_type": {
+          "type": ["string", "null"],
+          "enum": ["waterlogging", "accident", "blockage", "construction", "congestion", "flood_risk", null],
+          "description": "Best-guess disruption category. Null when state is GREEN."
+        },
+        "affected_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Estimated number of vehicles affected / detected in the disruption window."
+        },
+        "alt_routes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Human-readable alternate route descriptions, e.g. 'Via SEG_005 → SEG_012 (+8 min)'."
+        },
+        "alt_route_details": {
+          "type": "array",
+          "description": "Machine-readable alternate route objects for the Commuter UI to render.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "via_segments": { "type": "array", "items": { "type": "string" } },
+              "extra_minutes": { "type": "number" },
+              "distance_km":  { "type": "number" }
+            }
+          }
+        },
+        "suggested_action": {
+          "type": ["string", "null"],
+          "enum": ["monitor", "reroute", "close", "dispatch", "resolve", null],
+          "description": "Recommended next action for the Traffic Authority."
+        },
+        "priority_score": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Priority ranking score = confidence × affected_count × stage_weight × road_type_weight. Higher = more urgent."
+        },
+        "authority_action": {
+          "type": ["string", "null"],
+          "enum": ["close", "divert", "dispatch", "resolve", "monitor", null],
+          "description": "Last action taken by a Traffic Authority officer. Null if no authority action yet."
+        },
+        "authority_officer_id": {
+          "type": ["string", "null"],
+          "description": "Officer ID who took the last authority action."
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 UTC timestamp of the most recent state update."
+        },
+        "valid_until": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "If set, the state auto-expires to GREEN after this time (used for simulated events in demo)."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "ComplaintPayload": {
+      "$comment": "Submitted by a commuter via the Commuter Interface. POST /api/ingest/complaint",
+      "type": "object",
+      "required": ["segment_id", "category", "timestamp"],
+      "properties": {
+        "segment_id": {
+          "type": "string",
+          "pattern": "^SEG_\\d{3}$"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["waterlogging", "accident", "blockage", "construction", "other"],
+          "description": "Disruption type reported by the commuter."
+        },
+        "description": {
+          "type": ["string", "null"],
+          "maxLength": 500,
+          "description": "Optional free-text description."
+        },
+        "photo_url": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "description": "Optional URL of an uploaded photo (future: handled via object storage)."
+        },
+        "reporter_type": {
+          "type": "string",
+          "enum": ["commuter", "fleet"],
+          "default": "commuter",
+          "description": "Fleet reporters receive a higher source_weight (1.5 vs 1.0) in the normalizer."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 UTC timestamp — set by the client."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "AuthorityAction": {
+      "$comment": "One-click action from the Traffic Authority Dashboard. POST /api/authority/action. Writes directly to CentralState.",
+      "type": "object",
+      "required": ["segment_id", "action", "officer_id", "timestamp"],
+      "properties": {
+        "segment_id": {
+          "type": "string",
+          "pattern": "^SEG_\\d{3}$"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["close", "divert", "dispatch", "resolve", "monitor"],
+          "description": "close = mark road officially closed (triggers RED). resolve = mark disruption resolved (returns to GREEN). divert = issue diversion notice. dispatch = send field team. monitor = acknowledge but keep watching."
+        },
+        "officer_id": {
+          "type": "string",
+          "description": "ID of the Traffic Authority officer taking the action."
+        },
+        "note": {
+          "type": ["string", "null"],
+          "maxLength": 300,
+          "description": "Optional action note or dispatch instructions."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "CCTVEvent": {
+      "$comment": "Raw output payload from cctv_runner.py. POST /api/ingest/cctv. The Signal Normalizer converts this to a NormalizedEvent with signal_type='cctv_anomaly'.",
+      "type": "object",
+      "required": ["source", "segment_id", "timestamp", "vehicle_count", "stopped_count", "slow_count", "anomaly_confidence"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "const": "cctv",
+          "description": "Always 'cctv' — identifies this as a CCTV runner event."
+        },
+        "segment_id": {
+          "type": "string",
+          "pattern": "^SEG_\\d{3}$"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 UTC timestamp of the analysed window."
+        },
+        "frame_range": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[start_frame, end_frame] of the analysed video window."
+        },
+        "vehicle_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total vehicles detected by YOLOv8n in this window."
+        },
+        "stopped_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Vehicles classified as stopped (centre-point displacement < 5px across sampled frames for >= 30s simulated time)."
+        },
+        "slow_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Vehicles moving significantly slower than the segment's time-of-day baseline."
+        },
+        "anomaly_confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Composite score = (stopped_count + 0.5 * slow_count) / max(vehicle_count, 1). Clipped to [0, 1]. >= 0.5 triggers RED contribution."
+        },
+        "dominant_class": {
+          "type": "string",
+          "enum": ["car", "truck", "bus", "motorcycle", "mixed", "unknown"],
+          "description": "Most frequent YOLO-detected vehicle class in this window."
+        },
+        "raw_classes": {
+          "type": "object",
+          "description": "Raw per-class detection counts from YOLOv8n COCO output.",
+          "patternProperties": {
+            "^(car|truck|bus|motorcycle)$": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "model": {
+          "type": "string",
+          "default": "yolov8n.pt",
+          "description": "YOLO model file used for inference."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "TelemetryPing": {
+      "$comment": "Speed/stop ping from a commuter phone or fleet GPS. POST /api/ingest/telemetry",
+      "type": "object",
+      "required": ["segment_id", "speed_kmh", "timestamp"],
+      "properties": {
+        "segment_id": {
+          "type": "string",
+          "pattern": "^SEG_\\d{3}$"
+        },
+        "speed_kmh": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 200,
+          "description": "Current vehicle speed in km/h. 0 = stopped."
+        },
+        "stopped_duration_sec": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "How long the vehicle has been stopped (seconds). Null if moving."
+        },
+        "vehicle_type": {
+          "type": "string",
+          "enum": ["commuter", "bus", "taxi", "delivery", "unknown"],
+          "default": "commuter",
+          "description": "Fleet types (bus/taxi/delivery) receive source_weight 1.5."
+        },
+        "lat": { "type": ["number", "null"], "minimum": -90, "maximum": 90 },
+        "lon": { "type": ["number", "null"], "minimum": -180, "maximum": 180 },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "SimulatorEvent": {
+      "$comment": "Payload for the Demo Event & Rain Simulator. POST /api/demo/simulate. Allows injecting any signal type for a live demo.",
+      "type": "object",
+      "required": ["type", "segment_id"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["rain", "speed", "stop", "complaint", "cctv_anomaly", "authority_close", "reset"],
+          "description": "Type of event to inject. 'reset' returns segment to GREEN."
+        },
+        "segment_id": {
+          "type": "string",
+          "pattern": "^SEG_\\d{3}$"
+        },
+        "params": {
+          "type": "object",
+          "description": "Event-specific parameters. rain→{rain_mm}, speed→{speed_kmh, count}, stop→{stopped_sec, count}, complaint→{category}, cctv_anomaly→{anomaly_confidence}.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "RainfallReading": {
+      "$comment": "Internal structure — Live Rainfall Fetcher output per zone. Cached in memory / SQLite for 60 seconds.",
+      "type": "object",
+      "required": ["segment_id", "rain_mm_per_hour", "fetched_at"],
+      "properties": {
+        "segment_id": {
+          "type": "string",
+          "pattern": "^SEG_\\d{3}$"
+        },
+        "rain_mm_per_hour": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Current precipitation intensity in mm/hr from Open-Meteo."
+        },
+        "rain_1h_accumulated_mm": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "1-hour accumulated rainfall in mm — used for flood threshold comparison."
+        },
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["open_meteo", "cache", "fallback_file"],
+          "description": "Whether this reading came live from Open-Meteo, the in-memory cache, or the offline fallback JSON."
+        }
+      },
+      "additionalProperties": false
+    }
+
+  },
+
+  "api_endpoints": {
+    "$comment": "Canonical API contract reference. Backend (Track B) MUST implement these exactly. All other tracks consume them.",
+    "POST /api/ingest/cctv":       { "request": "$ref:CCTVEvent",       "response": "{event_id: uuid, status: 'queued'}" },
+    "POST /api/ingest/telemetry":  { "request": "$ref:TelemetryPing",   "response": "{event_id: uuid, status: 'queued'}" },
+    "POST /api/ingest/complaint":  { "request": "$ref:ComplaintPayload","response": "{complaint_id: uuid, status: 'queued'}" },
+    "POST /api/authority/action":  { "request": "$ref:AuthorityAction", "response": "{status: 'applied', state: CentralState}" },
+    "POST /api/demo/simulate":     { "request": "$ref:SimulatorEvent",  "response": "{status: 'injected'}" },
+    "GET  /api/state":             { "response": "CentralState[]" },
+    "GET  /api/state/{segment_id}":{ "response": "CentralState" },
+    "GET  /api/segments":          { "response": "RoadSegment[]" },
+    "GET  /api/routes/{segment_id}":{ "response": "{segment_id, alt_routes: AltRoute[], delay_minutes: number}" },
+    "GET  /api/weather/current":   { "response": "RainfallReading[]" },
+    "WS   /ws/state":              { "push": "CentralState (on every change)" }
+  },
+
+  "source_weight_reference": {
+    "$comment": "Applied by the Signal Normalizer for every event. Higher weight = more influence on confidence score.",
+    "cctv":        1.3,
+    "fleet":       1.5,
+    "telemetry":   1.0,
+    "complaint":   1.0,
+    "weather":     0.8,
+    "authority":   2.0,
+    "simulator":   1.0
+  },
+
+  "escalation_thresholds": {
+    "$comment": "Two-Stage Confidence & Escalation Block reference values. Tune here, import in backend logic.",
+    "yellow_min_confidence":           0.25,
+    "red_min_confidence":              0.60,
+    "stopped_vehicle_trigger_sec":     30,
+    "slow_vehicle_min_count":          2,
+    "speed_drop_ratio_threshold":      0.55,
+    "cctv_anomaly_yellow_threshold":   0.35,
+    "cctv_anomaly_red_threshold":      0.50,
+    "complaint_cluster_window_sec":    120,
+    "complaint_cluster_min_count":     1,
+    "signals_window_sec":              60
+  }
+}

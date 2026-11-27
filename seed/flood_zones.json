@@ -1,0 +1,115 @@
+[
+  {
+    "segment_id": "SEG_001",
+    "name": "Anna Salai — Triplicane Underpass",
+    "flood_zone_id": "FZ_001",
+    "rain_threshold_mm": 14.0,
+    "severe_threshold_mm": 25.0,
+    "typical_severity": "moderate_waterlogging",
+    "typical_onset_minutes": 20,
+    "peak_risk_months": ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov"],
+    "peak_risk_hours": ["07", "08", "09", "17", "18", "19"],
+    "historical_events": [
+      {
+        "date": "2023-10-20",
+        "rain_mm_recorded": 32.0,
+        "severity": "road_blocked",
+        "vehicles_affected": 45,
+        "resolution_minutes": 90,
+        "source": "municipal_records"
+      },
+      {
+        "date": "2024-08-15",
+        "rain_mm_recorded": 19.5,
+        "severity": "moderate_waterlogging",
+        "vehicles_affected": 20,
+        "resolution_minutes": 40,
+        "source": "complaint_log"
+      },
+      {
+        "date": "2024-11-03",
+        "rain_mm_recorded": 28.0,
+        "severity": "road_blocked",
+        "vehicles_affected": 60,
+        "resolution_minutes": 120,
+        "source": "authority_report"
+      }
+    ],
+    "drainage_quality": "poor",
+    "notes": "Underpass drainage consistently overwhelmed at >14mm/hr. CCTV on north approach helps early detection. Recommend YELLOW at 14mm, RED if speed also drops below 50% baseline.",
+    "recommended_alternate_segments": ["SEG_006"]
+  },
+  {
+    "segment_id": "SEG_003",
+    "name": "Poonamallee High Road — Kilpauk Stretch",
+    "flood_zone_id": "FZ_002",
+    "rain_threshold_mm": 18.0,
+    "severe_threshold_mm": 30.0,
+    "typical_severity": "light_waterlogging",
+    "typical_onset_minutes": 35,
+    "peak_risk_months": ["Oct", "Nov", "Dec"],
+    "peak_risk_hours": ["06", "07", "08", "17", "18", "19", "20"],
+    "historical_events": [
+      {
+        "date": "2023-11-10",
+        "rain_mm_recorded": 22.0,
+        "severity": "light_waterlogging",
+        "vehicles_affected": 15,
+        "resolution_minutes": 50,
+        "source": "complaint_log"
+      },
+      {
+        "date": "2024-10-27",
+        "rain_mm_recorded": 35.0,
+        "severity": "road_blocked",
+        "vehicles_affected": 38,
+        "resolution_minutes": 95,
+        "source": "authority_report"
+      }
+    ],
+    "drainage_quality": "fair",
+    "notes": "Road dips near Kilpauk Medical College. No CCTV — relies on commuter telemetry + complaints. Onset is slower (~35 min) than SEG_001 due to better upstream drainage. YELLOW at 18mm, escalate to RED if any vehicle reports or stops.",
+    "recommended_alternate_segments": ["SEG_002"]
+  },
+  {
+    "segment_id": "SEG_005",
+    "name": "Velachery Main Road — Taramani Bridge",
+    "flood_zone_id": "FZ_003",
+    "rain_threshold_mm": 20.0,
+    "severe_threshold_mm": 35.0,
+    "typical_severity": "moderate_waterlogging",
+    "typical_onset_minutes": 45,
+    "peak_risk_months": ["Oct", "Nov"],
+    "peak_risk_hours": ["06", "07", "08", "09", "18", "19", "20"],
+    "historical_events": [
+      {
+        "date": "2021-11-19",
+        "rain_mm_recorded": 40.0,
+        "severity": "road_blocked",
+        "vehicles_affected": 72,
+        "resolution_minutes": 180,
+        "source": "municipal_records",
+        "notes": "2021 Chennai floods — Buckingham Canal overflow."
+      },
+      {
+        "date": "2023-10-05",
+        "rain_mm_recorded": 23.5,
+        "severity": "moderate_waterlogging",
+        "vehicles_affected": 25,
+        "resolution_minutes": 60,
+        "source": "complaint_log"
+      },
+      {
+        "date": "2024-11-12",
+        "rain_mm_recorded": 28.0,
+        "severity": "road_blocked",
+        "vehicles_affected": 50,
+        "resolution_minutes": 110,
+        "source": "authority_report"
+      }
+    ],
+    "drainage_quality": "poor",
+    "notes": "Flooding triggered by Buckingham Canal overflow — dependent on canal level, not just local rain. Onset can be sudden. CCTV present on south end. YELLOW at 20mm; note that this segment is itself used as an alternate route for SEG_001 — if SEG_005 turns RED, the rerouting block must mark that alternate as unavailable.",
+    "recommended_alternate_segments": ["SEG_006"]
+  }
+]

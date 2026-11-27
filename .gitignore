@@ -1,0 +1,120 @@
+# =============================================================================
+# TrafficSense — .gitignore
+# =============================================================================
+
+# ----- Environment & Secrets ------------------------------------------------
+.env
+.env.local
+.env.*.local
+*.secret
+
+# ----- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.Python
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+MANIFEST
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.testmondata
+
+# mypy / pyright
+.mypy_cache/
+.pyright/
+.ruff_cache/
+
+# ----- Database --------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+data/
+
+# ----- ML Models (large binary files — download on first run) ---------------
+*.pt
+*.pth
+*.onnx
+*.weights
+*.h5
+*.pb
+models/
+
+# ----- Video & Large Media ---------------------------------------------------
+# Developers download sample videos locally; they are NOT committed.
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+sample_videos/
+
+# ----- Node / Frontend (if any) ----------------------------------------------
+node_modules/
+.npm/
+dist/
+.next/
+.nuxt/
+*.lock
+# Keep package-lock.json for reproducibility — uncomment to ignore:
+# package-lock.json
+
+# ----- OS Artefacts ----------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# ----- IDE & Editor ----------------------------------------------------------
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+*~
+
+# ----- OSRM Data (large map files) ------------------------------------------
+osrm-data/
+*.osrm
+*.osrm.*
+
+# ----- Logs ------------------------------------------------------------------
+*.log
+logs/
+
+# ----- Temporary / Scratch ---------------------------------------------------
+tmp/
+temp/
+scratch/
+*.tmp
+*.bak
+
+# ----- Demo Recordings (commit a link in README, not the file) ---------------
+demo_recording.*
+*.loom
+
+# ----- Keep these tracked ----------------------------------------------------
+!fallback/rain_cache.json
+!fallback/static_routes.json
+!seed/segments.json
+!seed/flood_zones.json
+!contracts/schemas.json
+!.env.example
