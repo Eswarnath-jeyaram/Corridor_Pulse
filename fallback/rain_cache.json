@@ -1,0 +1,8 @@
+﻿{
+  "SEG_001": {
+    "segment_id": "SEG_001",
+    "rain_mm_per_hour": 18.0,
+    "rain_1h_accumulated_mm": 18.0,
+    "source": "fallback_file"
+  }
+}
