@@ -1,0 +1,138 @@
+{
+  "scenario_id": "SCENARIO_04",
+  "name": "Act 4 — Authority Action: One-Click Road Closure",
+  "description": "Traffic Authority officer reviews priority disruption #1 (SEG_001) and executes a one-click 'Close Road' action with note. CentralState is immediately updated and broadcasts closure.",
+  "authority_action": {
+    "segment_id": "SEG_001",
+    "action": "close",
+    "officer_id": "AUTH_01",
+    "note": "Triplicane underpass submerged. Official closure initiated, traffic diverted to Gemini Flyover.",
+    "timestamp": "2026-11-27T08:25:00Z"
+  },
+  "expected_state": [
+    {
+      "segment_id": "SEG_001",
+      "state": "RED",
+      "stage": 2,
+      "confidence": 0.95,
+      "reason": "flood_risk,speed_drop,cctv_anomaly,authority_action",
+      "disruption_type": "waterlogging",
+      "affected_count": 35,
+      "alt_routes": [
+        "Via Mount Road — Gemini Flyover Approach (SEG_002) (+9 min)",
+        "Via GST Road — Chromepet Flyover (SEG_006) (+14 min)"
+      ],
+      "alt_route_details": [
+        {
+          "via_segments": ["SEG_002"],
+          "extra_minutes": 9.0,
+          "distance_km": 4.1
+        },
+        {
+          "via_segments": ["SEG_006"],
+          "extra_minutes": 14.0,
+          "distance_km": 6.8
+        }
+      ],
+      "suggested_action": "close",
+      "priority_score": 53.2,
+      "authority_action": "close",
+      "authority_officer_id": "AUTH_01",
+      "updated_at": "2026-11-27T08:25:00Z",
+      "valid_until": "2026-11-27T09:30:00Z"
+    },
+    {
+      "segment_id": "SEG_002",
+      "state": "GREEN",
+      "stage": 0,
+      "confidence": 0.04,
+      "reason": "normal_flow",
+      "disruption_type": null,
+      "affected_count": 0,
+      "alt_routes": [],
+      "alt_route_details": [],
+      "suggested_action": null,
+      "priority_score": 0.0,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:25:00Z",
+      "valid_until": null
+    },
+    {
+      "segment_id": "SEG_003",
+      "state": "YELLOW",
+      "stage": 1,
+      "confidence": 0.40,
+      "reason": "rain_threshold_crossed,flood_risk",
+      "disruption_type": "flood_risk",
+      "affected_count": 6,
+      "alt_routes": [
+        "Via Mount Road — Gemini Flyover Approach (SEG_002) (+6 min)"
+      ],
+      "alt_route_details": [
+        {
+          "via_segments": ["SEG_002"],
+          "extra_minutes": 6.0,
+          "distance_km": 2.8
+        }
+      ],
+      "suggested_action": "monitor",
+      "priority_score": 14.4,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:25:00Z",
+      "valid_until": "2026-11-27T08:55:00Z"
+    },
+    {
+      "segment_id": "SEG_004",
+      "state": "GREEN",
+      "stage": 0,
+      "confidence": 0.06,
+      "reason": "normal_flow",
+      "disruption_type": null,
+      "affected_count": 0,
+      "alt_routes": [],
+      "alt_route_details": [],
+      "suggested_action": null,
+      "priority_score": 0.0,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:25:00Z",
+      "valid_until": null
+    },
+    {
+      "segment_id": "SEG_005",
+      "state": "GREEN",
+      "stage": 0,
+      "confidence": 0.02,
+      "reason": "normal_flow",
+      "disruption_type": null,
+      "affected_count": 0,
+      "alt_routes": [],
+      "alt_route_details": [],
+      "suggested_action": null,
+      "priority_score": 0.0,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:25:00Z",
+      "valid_until": null
+    },
+    {
+      "segment_id": "SEG_006",
+      "state": "GREEN",
+      "stage": 0,
+      "confidence": 0.01,
+      "reason": "normal_flow",
+      "disruption_type": null,
+      "affected_count": 0,
+      "alt_routes": [],
+      "alt_route_details": [],
+      "suggested_action": null,
+      "priority_score": 0.0,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:25:00Z",
+      "valid_until": null
+    }
+  ]
+}

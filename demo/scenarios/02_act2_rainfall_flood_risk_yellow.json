@@ -1,0 +1,124 @@
+{
+  "scenario_id": "SCENARIO_02",
+  "name": "Act 2 — Yellow: Rainfall + Flood Risk Alert",
+  "description": "Heavy rainfall begins over historically flood-prone SEG_001 (Anna Salai Triplicane Underpass). Threshold is 14mm/hr; injected 18mm/hr. Early warning is raised before vehicles slow down.",
+  "simulator_action": {
+    "type": "rain",
+    "segment_id": "SEG_001",
+    "params": {
+      "rain_mm": 18.0
+    }
+  },
+  "expected_state": [
+    {
+      "segment_id": "SEG_001",
+      "state": "YELLOW",
+      "stage": 1,
+      "confidence": 0.42,
+      "reason": "rain_threshold_crossed,flood_risk",
+      "disruption_type": "flood_risk",
+      "affected_count": 5,
+      "alt_routes": [
+        "Via Mount Road — Gemini Flyover Approach (SEG_002) (+6 min)"
+      ],
+      "alt_route_details": [
+        {
+          "via_segments": ["SEG_002"],
+          "extra_minutes": 6.0,
+          "distance_km": 4.1
+        }
+      ],
+      "suggested_action": "monitor",
+      "priority_score": 12.6,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:15:00Z",
+      "valid_until": "2026-11-27T08:45:00Z"
+    },
+    {
+      "segment_id": "SEG_002",
+      "state": "GREEN",
+      "stage": 0,
+      "confidence": 0.04,
+      "reason": "normal_flow",
+      "disruption_type": null,
+      "affected_count": 0,
+      "alt_routes": [],
+      "alt_route_details": [],
+      "suggested_action": null,
+      "priority_score": 0.0,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:15:00Z",
+      "valid_until": null
+    },
+    {
+      "segment_id": "SEG_003",
+      "state": "GREEN",
+      "stage": 0,
+      "confidence": 0.03,
+      "reason": "normal_flow",
+      "disruption_type": null,
+      "affected_count": 0,
+      "alt_routes": [],
+      "alt_route_details": [],
+      "suggested_action": null,
+      "priority_score": 0.0,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:15:00Z",
+      "valid_until": null
+    },
+    {
+      "segment_id": "SEG_004",
+      "state": "GREEN",
+      "stage": 0,
+      "confidence": 0.06,
+      "reason": "normal_flow",
+      "disruption_type": null,
+      "affected_count": 0,
+      "alt_routes": [],
+      "alt_route_details": [],
+      "suggested_action": null,
+      "priority_score": 0.0,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:15:00Z",
+      "valid_until": null
+    },
+    {
+      "segment_id": "SEG_005",
+      "state": "GREEN",
+      "stage": 0,
+      "confidence": 0.02,
+      "reason": "normal_flow",
+      "disruption_type": null,
+      "affected_count": 0,
+      "alt_routes": [],
+      "alt_route_details": [],
+      "suggested_action": null,
+      "priority_score": 0.0,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:15:00Z",
+      "valid_until": null
+    },
+    {
+      "segment_id": "SEG_006",
+      "state": "GREEN",
+      "stage": 0,
+      "confidence": 0.01,
+      "reason": "normal_flow",
+      "disruption_type": null,
+      "affected_count": 0,
+      "alt_routes": [],
+      "alt_route_details": [],
+      "suggested_action": null,
+      "priority_score": 0.0,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:15:00Z",
+      "valid_until": null
+    }
+  ]
+}

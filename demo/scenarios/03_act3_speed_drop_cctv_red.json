@@ -1,0 +1,155 @@
+{
+  "scenario_id": "SCENARIO_03",
+  "name": "Act 3 — Red Escalation: Speed Drop + CCTV Anomaly",
+  "description": "Two minutes after rainfall, telemetry detects vehicles slowing to 8 km/h (baseline 28). CCTV runner confirms stopped/slow vehicle anomaly (confidence 0.60) and a commuter complaint arrives. System escalates to RED Stage 2.",
+  "simulator_actions": [
+    {
+      "type": "speed",
+      "segment_id": "SEG_001",
+      "params": {
+        "speed_kmh": 8.0,
+        "count": 3
+      }
+    },
+    {
+      "type": "cctv_anomaly",
+      "segment_id": "SEG_001",
+      "params": {
+        "anomaly_confidence": 0.65
+      }
+    },
+    {
+      "type": "complaint",
+      "segment_id": "SEG_001",
+      "params": {
+        "category": "waterlogging"
+      }
+    }
+  ],
+  "expected_state": [
+    {
+      "segment_id": "SEG_001",
+      "state": "RED",
+      "stage": 2,
+      "confidence": 0.85,
+      "reason": "flood_risk,speed_drop,cctv_anomaly,complaint",
+      "disruption_type": "waterlogging",
+      "affected_count": 28,
+      "alt_routes": [
+        "Via Mount Road — Gemini Flyover Approach (SEG_002) (+9 min)",
+        "Via GST Road — Chromepet Flyover (SEG_006) (+14 min)"
+      ],
+      "alt_route_details": [
+        {
+          "via_segments": ["SEG_002"],
+          "extra_minutes": 9.0,
+          "distance_km": 4.1
+        },
+        {
+          "via_segments": ["SEG_006"],
+          "extra_minutes": 14.0,
+          "distance_km": 6.8
+        }
+      ],
+      "suggested_action": "close",
+      "priority_score": 47.6,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:20:00Z",
+      "valid_until": "2026-11-27T08:50:00Z"
+    },
+    {
+      "segment_id": "SEG_002",
+      "state": "GREEN",
+      "stage": 0,
+      "confidence": 0.04,
+      "reason": "normal_flow",
+      "disruption_type": null,
+      "affected_count": 0,
+      "alt_routes": [],
+      "alt_route_details": [],
+      "suggested_action": null,
+      "priority_score": 0.0,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:20:00Z",
+      "valid_until": null
+    },
+    {
+      "segment_id": "SEG_003",
+      "state": "YELLOW",
+      "stage": 1,
+      "confidence": 0.40,
+      "reason": "rain_threshold_crossed,flood_risk",
+      "disruption_type": "flood_risk",
+      "affected_count": 6,
+      "alt_routes": [
+        "Via Mount Road — Gemini Flyover Approach (SEG_002) (+6 min)"
+      ],
+      "alt_route_details": [
+        {
+          "via_segments": ["SEG_002"],
+          "extra_minutes": 6.0,
+          "distance_km": 2.8
+        }
+      ],
+      "suggested_action": "monitor",
+      "priority_score": 14.4,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:20:00Z",
+      "valid_until": "2026-11-27T08:45:00Z"
+    },
+    {
+      "segment_id": "SEG_004",
+      "state": "GREEN",
+      "stage": 0,
+      "confidence": 0.06,
+      "reason": "normal_flow",
+      "disruption_type": null,
+      "affected_count": 0,
+      "alt_routes": [],
+      "alt_route_details": [],
+      "suggested_action": null,
+      "priority_score": 0.0,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:20:00Z",
+      "valid_until": null
+    },
+    {
+      "segment_id": "SEG_005",
+      "state": "GREEN",
+      "stage": 0,
+      "confidence": 0.02,
+      "reason": "normal_flow",
+      "disruption_type": null,
+      "affected_count": 0,
+      "alt_routes": [],
+      "alt_route_details": [],
+      "suggested_action": null,
+      "priority_score": 0.0,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:20:00Z",
+      "valid_until": null
+    },
+    {
+      "segment_id": "SEG_006",
+      "state": "GREEN",
+      "stage": 0,
+      "confidence": 0.01,
+      "reason": "normal_flow",
+      "disruption_type": null,
+      "affected_count": 0,
+      "alt_routes": [],
+      "alt_route_details": [],
+      "suggested_action": null,
+      "priority_score": 0.0,
+      "authority_action": null,
+      "authority_officer_id": null,
+      "updated_at": "2026-11-27T08:20:00Z",
+      "valid_until": null
+    }
+  ]
+}
