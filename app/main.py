@@ -4,7 +4,7 @@ import sqlite3
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 import httpx
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -85,6 +85,12 @@ class AuthorityAction(BaseModel):
     officer_id: str
     note: Optional[str] = Field(default=None, max_length=300)
     timestamp: str
+
+
+class SimulatorEvent(BaseModel):
+    type: Literal["rain", "speed", "stop", "complaint", "cctv_anomaly", "authority_close", "reset"]
+    segment_id: str = Field(pattern=r"^SEG_\d{3}$")
+    params: Optional[dict[str, Any]] = None
 
 
 def now_iso() -> str:
@@ -455,6 +461,96 @@ def apply_authority_action(act: AuthorityAction) -> dict:
     return {"status": "applied", "state": updated}
 
 
+@app.post("/api/demo/simulate")
+def simulate_event(sim: SimulatorEvent) -> dict:
+    params = sim.params or {}
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM central_state WHERE segment_id = ?", (sim.segment_id,)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail=f"Unknown segment_id: {sim.segment_id}")
+
+        ts = now_iso()
+        if sim.type == "reset":
+            conn.execute("DELETE FROM events_log WHERE segment_id = ?", (sim.segment_id,))
+            conn.execute(
+                """
+                UPDATE central_state
+                SET state = 'GREEN', stage = 0, confidence = 0.0, reason = 'normal_flow',
+                    disruption_type = 'congestion', affected_count = 0, suggested_action = 'monitor',
+                    priority_score = 0.0, authority_action = NULL, updated_at = ?
+                WHERE segment_id = ?
+                """,
+                (ts, sim.segment_id),
+            )
+            conn.commit()
+            updated = dict(conn.execute("SELECT * FROM central_state WHERE segment_id = ?", (sim.segment_id,)).fetchone())
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(ws_manager.broadcast(updated))
+            except RuntimeError:
+                pass
+            return {"status": "injected", "state": updated}
+
+        if sim.type == "authority_close":
+            conn.execute(
+                """
+                UPDATE central_state
+                SET state = 'RED', stage = 2, confidence = 1.0, reason = 'authority_close',
+                    suggested_action = 'close', authority_action = 'close', updated_at = ?
+                WHERE segment_id = ?
+                """,
+                (ts, sim.segment_id),
+            )
+            conn.commit()
+            updated = dict(conn.execute("SELECT * FROM central_state WHERE segment_id = ?", (sim.segment_id,)).fetchone())
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(ws_manager.broadcast(updated))
+            except RuntimeError:
+                pass
+            return {"status": "injected", "state": updated}
+
+        count = max(1, int(params.get("count", 1)))
+        signal_map = {
+            "rain": ("weather", "rain_threshold", 0.8, "waterlogging"),
+            "speed": ("simulator", "speed_drop", 1.0, "congestion"),
+            "stop": ("simulator", "stopped", 1.2, "congestion"),
+            "complaint": ("complaint", "complaint", 1.0, str(params.get("category") or "blockage")),
+            "cctv_anomaly": ("cctv", "cctv_anomaly", 1.3, "congestion"),
+        }
+        src, sig, wgt, disr = signal_map[sim.type]
+        for _ in range(count):
+            conn.execute(
+                "INSERT INTO events_log (event_id, segment_id, source, signal_type, weight, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (str(uuid.uuid4()), sim.segment_id, src, sig, wgt, ts),
+            )
+        updated = recalculate_segment(conn, sim.segment_id, disruption_type=disr)
+
+    return {"status": "injected", "state": updated}
+
+
+@app.get("/api/routes/{segment_id}")
+def get_segment_routes(segment_id: str) -> dict:
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM central_state WHERE segment_id = ?", (segment_id,)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail=f"Unknown segment_id: {segment_id}")
+        stage = int(row["stage"])
+        delay = 0 if stage == 0 else (5 if stage == 1 else 14)
+        alt_routes = [] if stage == 0 else [
+            {
+                "route_id": f"ALT_{segment_id}_A",
+                "summary": f"Bypass corridor around {segment_id}",
+                "extra_minutes": max(2, delay - 4),
+            }
+        ]
+        return {
+            "segment_id": segment_id,
+            "alt_routes": alt_routes,
+            "delay_minutes": delay,
+        }
+
+
 @app.websocket("/ws/state")
 async def websocket_state(ws: WebSocket) -> None:
     await ws_manager.connect(ws)
@@ -468,3 +564,6 @@ async def websocket_state(ws: WebSocket) -> None:
         ws_manager.disconnect(ws)
     except Exception:
         ws_manager.disconnect(ws)
+
+
+
