@@ -118,3 +118,8 @@ demo_recording.*
 !seed/flood_zones.json
 !contracts/schemas.json
 !.env.example
+
+sample_videos/
+*.mp4
+.venv/
+*.pt
