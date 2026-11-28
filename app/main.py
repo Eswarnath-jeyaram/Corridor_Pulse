@@ -97,7 +97,7 @@ class AuthorityAction(BaseModel):
 
 class SimulatorEvent(BaseModel):
     type: Literal["rain", "speed", "stop", "complaint", "cctv_anomaly", "authority_close", "reset"]
-    segment_id: str = Field(pattern=r"^SEG_\d{3}$")
+    segment_id: str = Field(pattern=r"^(SEG_\d{3}|ALL)$")
     params: Optional[dict[str, Any]] = None
 
 
@@ -473,6 +473,22 @@ def apply_authority_action(act: AuthorityAction) -> dict:
 def simulate_event(sim: SimulatorEvent) -> dict:
     params = sim.params or {}
     with get_conn() as conn:
+        ts = now_iso()
+        if sim.type == "reset" and sim.segment_id == "ALL":
+            conn.execute("DELETE FROM events_log")
+            conn.execute(
+                """
+                UPDATE central_state
+                SET state = 'GREEN', stage = 0, confidence = 0.0, reason = 'normal_flow',
+                    disruption_type = 'congestion', affected_count = 0, suggested_action = 'monitor',
+                    priority_score = 0.0, authority_action = NULL, updated_at = ?
+                """,
+                (ts,),
+            )
+            conn.commit()
+            rows = [dict(r) for r in conn.execute("SELECT * FROM central_state ORDER BY segment_id").fetchall()]
+            return {"status": "injected", "state": rows}
+
         row = conn.execute("SELECT * FROM central_state WHERE segment_id = ?", (sim.segment_id,)).fetchone()
         if not row:
             raise HTTPException(status_code=404, detail=f"Unknown segment_id: {sim.segment_id}")
