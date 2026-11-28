@@ -1,4 +1,5 @@
-﻿import asyncio
+from fastapi.middleware.cors import CORSMiddleware
+import asyncio
 import json
 import sqlite3
 import uuid
@@ -17,6 +18,13 @@ RAIN_FALLBACK_PATH = BASE_DIR / "fallback" / "rain_cache.json"
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
 app = FastAPI(title="TrafficSense Track B Backend")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class ConnectionManager:
