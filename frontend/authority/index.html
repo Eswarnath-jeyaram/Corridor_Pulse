@@ -34,21 +34,21 @@
         </div>
 
         <!-- Data Source Switcher -->
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <select id="data-mode-select" class="form-select" style="padding: 6px 10px; font-size: 12px;">
-            <option value="mock">Mode: Local Mock</option>
-            <option value="live">Mode: Live Backend</option>
+        <div class="mode-select-group" style="display: flex; align-items: center; gap: 6px;">
+          <select id="data-mode-select" class="form-select" style="padding: 4px 8px; font-size: 11px;">
+            <option value="mock">Local Mock</option>
+            <option value="live">Live Backend</option>
           </select>
-          <button id="btn-reset-mock" class="btn-icon" title="Reset mock data to initial baseline state">↺ Reset</button>
+          <button id="btn-reset-mock" class="btn-icon" title="Reset mock data to initial baseline state" style="padding: 4px 8px; font-size: 11px;">↺ Reset</button>
         </div>
 
         <!-- Demo Simulator Quick Launcher -->
-        <button id="btn-open-simulator-tab" class="btn btn-secondary" style="font-size: 11px; padding: 6px 12px;" title="Jump to Demo Event & Rain Simulator Console">
+        <button id="btn-open-simulator-tab" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" title="Jump to Demo Event & Rain Simulator Console">
           ⚡ Demo Simulator
         </button>
 
         <!-- Theme Toggle -->
-        <button id="btn-toggle-theme" class="btn-icon" title="Toggle Khaki / Dark Mode">🌙 Dark Mode</button>
+        <button id="btn-toggle-theme" class="btn-icon" style="font-size: 11px; padding: 4px 9px;" title="Toggle Khaki / Dark Mode">🌙 Dark Mode</button>
 
         <!-- Officer Profile Badge / Sign In -->
         <div id="officer-badge-container"></div>
