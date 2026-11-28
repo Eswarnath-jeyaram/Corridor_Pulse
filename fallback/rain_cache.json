@@ -4,5 +4,17 @@
     "rain_mm_per_hour": 18.0,
     "rain_1h_accumulated_mm": 18.0,
     "source": "fallback_file"
+  },
+  "SEG_003": {
+    "segment_id": "SEG_003",
+    "rain_mm_per_hour": 20.0,
+    "rain_1h_accumulated_mm": 20.0,
+    "source": "fallback_file"
+  },
+  "SEG_005": {
+    "segment_id": "SEG_005",
+    "rain_mm_per_hour": 22.0,
+    "rain_1h_accumulated_mm": 22.0,
+    "source": "fallback_file"
   }
 }
