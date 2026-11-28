@@ -8,17 +8,21 @@
     "disruption_type": "waterlogging",
     "affected_count": 24,
     "alt_routes": [
-      "Via Mount Road — Gemini Flyover Approach (SEG_002) (+9 min)",
-      "Via GST Road — Chromepet Flyover (SEG_006) (+14 min)"
+      "Via Mount Road \u2014 Gemini Flyover Approach (SEG_002) (+9 min)",
+      "Via GST Road \u2014 Chromepet Flyover (SEG_006) (+14 min)"
     ],
     "alt_route_details": [
       {
-        "via_segments": ["SEG_002"],
+        "via_segments": [
+          "SEG_002"
+        ],
         "extra_minutes": 9.0,
         "distance_km": 4.1
       },
       {
-        "via_segments": ["SEG_006"],
+        "via_segments": [
+          "SEG_006"
+        ],
         "extra_minutes": 14.0,
         "distance_km": 6.8
       }
@@ -56,11 +60,13 @@
     "disruption_type": "flood_risk",
     "affected_count": 7,
     "alt_routes": [
-      "Via Mount Road — Gemini Flyover Approach (SEG_002) (+6 min)"
+      "Via Mount Road \u2014 Gemini Flyover Approach (SEG_002) (+6 min)"
     ],
     "alt_route_details": [
       {
-        "via_segments": ["SEG_002"],
+        "via_segments": [
+          "SEG_002"
+        ],
         "extra_minutes": 6.0,
         "distance_km": 2.8
       }
@@ -81,11 +87,13 @@
     "disruption_type": "accident",
     "affected_count": 12,
     "alt_routes": [
-      "Via Velachery Main Road — Taramani Bridge (SEG_005) (+5 min)"
+      "Via Velachery Main Road \u2014 Taramani Bridge (SEG_005) (+5 min)"
     ],
     "alt_route_details": [
       {
-        "via_segments": ["SEG_005"],
+        "via_segments": [
+          "SEG_005"
+        ],
         "extra_minutes": 5.0,
         "distance_km": 2.2
       }

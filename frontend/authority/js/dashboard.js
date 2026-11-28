@@ -1,7 +1,10 @@
 /**
  * TrafficSense — Traffic Authority Dashboard Controller
  * Track D | Phase 0 - Phase 4 Foundation
- * Features: White & Khaki Traffic Police Theme, OpenStreetMap tiles, Offline Schematic Fallback
+ * Features:
+ *  - White & Khaki Traffic Police Aesthetic (Default) + Dark Mode
+ *  - OpenStreetMap tiles + Offline Schematic Fallback
+ *  - Step 3: Full Demo Event & Rain Simulator (Acts 1-5, CCTV Anomaly, Field Weather/Speed/Complaint)
  */
 
 class DashboardController {
@@ -28,6 +31,7 @@ class DashboardController {
     this.initClock();
     this.initAuditLog();
     this.initEvents();
+    this.initSimulatorUI();
 
     // Initialize State Service
     window.stateService.onStateChange((state) => this.handleStateUpdate(state));
@@ -351,6 +355,10 @@ class DashboardController {
 
     this.updateInspector(window.stateService.state);
     this.highlightSegmentOnMap(segmentId);
+
+    // Sync simulator target dropdown if applicable
+    const fieldSelect = document.getElementById('sim-field-segment');
+    if (fieldSelect) fieldSelect.value = segmentId;
   }
 
   updateInspector(stateArray) {
@@ -640,6 +648,154 @@ class DashboardController {
   }
 
   // ==========================================
+  // Step 3: Demo Event & Rain Simulator UI
+  // ==========================================
+
+  initSimulatorUI() {
+    // Slider value live displays
+    const cctvSlider = document.getElementById('sim-cctv-confidence');
+    const cctvDisplay = document.getElementById('sim-cctv-conf-display');
+    if (cctvSlider && cctvDisplay) {
+      cctvSlider.addEventListener('input', () => {
+        cctvDisplay.textContent = Number(cctvSlider.value).toFixed(2);
+      });
+    }
+
+    const rainSlider = document.getElementById('sim-rain-input');
+    const rainDisplay = document.getElementById('sim-rain-display');
+    if (rainSlider && rainDisplay) {
+      rainSlider.addEventListener('input', () => {
+        rainDisplay.textContent = `${Number(rainSlider.value).toFixed(1)} mm/hr`;
+      });
+    }
+
+    // Preset pills click handler
+    document.querySelectorAll('.sim-preset-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        const targetId = pill.getAttribute('data-target');
+        const val = pill.getAttribute('data-val');
+        const targetEl = document.getElementById(targetId);
+        if (targetEl) {
+          targetEl.value = val;
+          targetEl.dispatchEvent(new Event('input'));
+          targetEl.dispatchEvent(new Event('change'));
+        }
+      });
+    });
+
+    // Act Loader buttons (Acts 1-5)
+    document.querySelectorAll('.sim-act-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const actNum = parseInt(btn.getAttribute('data-act'), 10);
+        document.querySelectorAll('.sim-act-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        try {
+          const res = await window.stateService.loadActScenario(actNum);
+          this.showToast(`Loaded ${res.name}`, 'success');
+          // For Acts 2, 3, 4, automatically select SEG_001
+          if (actNum >= 2 && actNum <= 4) {
+            this.selectSegment('SEG_001');
+          }
+        } catch (err) {
+          this.showToast(`Failed to load Act ${actNum}: ${err.message}`, 'danger');
+        }
+      });
+    });
+
+    // Simulator Global Reset
+    document.getElementById('btn-sim-reset-all')?.addEventListener('click', async () => {
+      try {
+        await window.stateService.injectSimulatorEvent({ type: 'reset', segment_id: 'ALL' });
+        this.showToast('All 6 corridors reset to GREEN (Stage 0)', 'success');
+      } catch (err) {
+        this.showToast(`Reset error: ${err.message}`, 'danger');
+      }
+    });
+
+    // CCTV Vision Anomaly Inject
+    document.getElementById('btn-sim-cctv-inject')?.addEventListener('click', async () => {
+      const segmentId = document.getElementById('sim-cctv-segment').value;
+      const anomType = document.getElementById('sim-cctv-type').value;
+      const confidence = parseFloat(document.getElementById('sim-cctv-confidence').value);
+      const vehCount = parseInt(document.getElementById('sim-cctv-veh-count').value, 10) || 18;
+      const stoppedCount = parseInt(document.getElementById('sim-cctv-stopped-count').value, 10) || 5;
+
+      try {
+        await window.stateService.injectSimulatorEvent({
+          type: 'cctv_anomaly',
+          segment_id: segmentId,
+          params: {
+            anomaly_confidence: confidence,
+            anomaly_type: anomType,
+            vehicle_count: vehCount,
+            stopped_count: stoppedCount
+          }
+        });
+        this.selectSegment(segmentId);
+        this.showToast(`Injected CCTV ${anomType} anomaly (conf: ${confidence.toFixed(2)}) on ${segmentId}`, 'warning');
+      } catch (err) {
+        this.showToast(`CCTV Inject error: ${err.message}`, 'danger');
+      }
+    });
+
+    // Rain Ingest Inject
+    document.getElementById('btn-sim-inject-rain')?.addEventListener('click', async () => {
+      const segmentId = document.getElementById('sim-field-segment').value;
+      const rainMm = parseFloat(document.getElementById('sim-rain-input').value) || 18.0;
+
+      try {
+        await window.stateService.injectSimulatorEvent({
+          type: 'rain',
+          segment_id: segmentId,
+          params: { rain_mm: rainMm }
+        });
+        this.selectSegment(segmentId);
+        this.showToast(`Injected rainfall: ${rainMm} mm/hr on ${segmentId}`, 'warning');
+      } catch (err) {
+        this.showToast(`Rain Inject error: ${err.message}`, 'danger');
+      }
+    });
+
+    // Speed Drop Inject
+    document.getElementById('btn-sim-inject-speed')?.addEventListener('click', async () => {
+      const segmentId = document.getElementById('sim-field-segment').value;
+      const speed = parseFloat(document.getElementById('sim-speed-kmh').value) || 8.0;
+      const count = parseInt(document.getElementById('sim-speed-count').value, 10) || 3;
+
+      try {
+        await window.stateService.injectSimulatorEvent({
+          type: 'speed',
+          segment_id: segmentId,
+          params: { speed_kmh: speed, count: count }
+        });
+        this.selectSegment(segmentId);
+        this.showToast(`Injected speed drop to ${speed} km/h (${count} vehs) on ${segmentId}`, 'danger');
+      } catch (err) {
+        this.showToast(`Speed Inject error: ${err.message}`, 'danger');
+      }
+    });
+
+    // Complaint Report Inject
+    document.getElementById('btn-sim-inject-complaint')?.addEventListener('click', async () => {
+      const segmentId = document.getElementById('sim-field-segment').value;
+      const category = document.getElementById('sim-complaint-cat').value;
+
+      try {
+        await window.stateService.injectSimulatorEvent({
+          type: 'complaint',
+          segment_id: segmentId,
+          params: { category: category }
+        });
+        this.selectSegment(segmentId);
+        this.showToast(`Injected complaint: [${category}] on ${segmentId}`, 'warning');
+      } catch (err) {
+        this.showToast(`Complaint error: ${err.message}`, 'danger');
+      }
+    });
+  }
+
+  // ==========================================
   // Event Bindings
   // ==========================================
 
@@ -649,6 +805,19 @@ class DashboardController {
 
     // Map view toggle (Map vs Schematic)
     document.getElementById('btn-toggle-map-view')?.addEventListener('click', () => this.toggleMapView());
+
+    // Quick Simulator Tab Launcher from Header
+    document.getElementById('btn-open-simulator-tab')?.addEventListener('click', () => {
+      document.querySelectorAll('.console-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+      const simTab = document.querySelector('.console-tab[data-target="tab-simulator"]');
+      if (simTab) simTab.classList.add('active');
+      const simPane = document.getElementById('tab-simulator');
+      if (simPane) {
+        simPane.style.display = 'block';
+        simPane.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
 
     // Mode select
     document.getElementById('data-mode-select')?.addEventListener('change', (e) => {
@@ -675,7 +844,7 @@ class DashboardController {
       });
     });
 
-    // Console tabs (Inspector vs Audit Log vs Flood Zones)
+    // Console tabs (Inspector vs Simulator vs Audit Log vs Flood Zones)
     document.querySelectorAll('.console-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         document.querySelectorAll('.console-tab').forEach(t => t.classList.remove('active'));

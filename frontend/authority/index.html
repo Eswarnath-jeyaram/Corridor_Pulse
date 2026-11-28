@@ -42,6 +42,11 @@
           <button id="btn-reset-mock" class="btn-icon" title="Reset mock data to initial baseline state">↺ Reset</button>
         </div>
 
+        <!-- Demo Simulator Quick Launcher -->
+        <button id="btn-open-simulator-tab" class="btn btn-secondary" style="font-size: 11px; padding: 6px 12px;" title="Jump to Demo Event & Rain Simulator Console">
+          ⚡ Demo Simulator
+        </button>
+
         <!-- Theme Toggle -->
         <button id="btn-toggle-theme" class="btn-icon" title="Toggle Khaki / Dark Mode">🌙 Dark Mode</button>
 
@@ -105,6 +110,7 @@
           <!-- Console Navigation Tabs -->
           <div class="console-tabs">
             <button class="console-tab active" data-target="tab-inspector">Segment Command &amp; Actions</button>
+            <button class="console-tab" data-target="tab-simulator">⚡ Demo Event &amp; Rain Simulator</button>
             <button class="console-tab" data-target="tab-audit-log">Authority Audit Log</button>
             <button class="console-tab" data-target="tab-flood-zones">Historical Flood Zones</button>
           </div>
@@ -202,7 +208,210 @@
             </div>
           </div>
 
-          <!-- Console Content Pane 2: Audit Log -->
+          <!-- Console Content Pane 2: Step 3 Full Demo Event & Rain Simulator -->
+          <div id="tab-simulator" class="console-content tab-pane" style="display: none;">
+            <div class="simulator-grid">
+              
+              <!-- Column 1: Demo Act Loader (Acts 1-5) -->
+              <div class="sim-card">
+                <div class="sim-card-header">
+                  <div class="sim-card-title">
+                    <span>1. Master Blueprint Acts</span>
+                    <span class="badge" style="background: var(--khaki-badge-bg); border: 1px solid var(--border-strong);">ACTS 1–5</span>
+                  </div>
+                  <div class="sim-card-sub">Instant walkthrough of the 5 live rehearsal demo scenarios.</div>
+                </div>
+
+                <div class="sim-act-buttons">
+                  <button class="sim-act-btn" data-act="1">
+                    <div>
+                      <div>Act 1: Normal Morning</div>
+                      <div style="font-size: 10px; color: var(--text-muted); font-weight: normal;">All 6 corridors GREEN (Stage 0)</div>
+                    </div>
+                    <span class="badge badge-state-green">GREEN</span>
+                  </button>
+
+                  <button class="sim-act-btn" data-act="2">
+                    <div>
+                      <div>Act 2: Rainfall + Flood Alert</div>
+                      <div style="font-size: 10px; color: var(--text-muted); font-weight: normal;">18 mm/hr on SEG_001 → Stage 1 Alert</div>
+                    </div>
+                    <span class="badge badge-state-yellow">YELLOW</span>
+                  </button>
+
+                  <button class="sim-act-btn" data-act="3">
+                    <div>
+                      <div>Act 3: Speed Drop + CCTV Anomaly</div>
+                      <div style="font-size: 10px; color: var(--text-muted); font-weight: normal;">Speed drops to 8 km/h + CCTV 0.65 → Confirmed</div>
+                    </div>
+                    <span class="badge badge-state-red">RED</span>
+                  </button>
+
+                  <button class="sim-act-btn" data-act="4">
+                    <div>
+                      <div>Act 4: One-Click Authority Closure</div>
+                      <div style="font-size: 10px; color: var(--text-muted); font-weight: normal;">Officer executes Close Action → Diversion</div>
+                    </div>
+                    <span class="badge badge-state-red">CLOSED</span>
+                  </button>
+
+                  <button class="sim-act-btn" data-act="5">
+                    <div>
+                      <div>Act 5: Drainage Recovery</div>
+                      <div style="font-size: 10px; color: var(--text-muted); font-weight: normal;">Water recedes → Restore to normal</div>
+                    </div>
+                    <span class="badge badge-state-green">RESOLVED</span>
+                  </button>
+
+                  <button id="btn-sim-reset-all" class="btn btn-secondary" style="width: 100%; justify-content: center; margin-top: 6px; font-weight: 700; border-color: var(--border-strong);">
+                    ↺ Reset All Corridors to GREEN (Stage 0)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Column 2: CCTV Vision Anomaly Simulator -->
+              <div class="sim-card">
+                <div class="sim-card-header">
+                  <div class="sim-card-title">
+                    <span>2. CCTV Vision Anomaly</span>
+                    <span class="badge" style="background: var(--action-navy-bg); color: var(--action-navy-text); border: 1px solid var(--action-navy-border);">YOLOv8n</span>
+                  </div>
+                  <div class="sim-card-sub">Simulate video analysis output for corridors with CCTV active.</div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">CCTV Segment</label>
+                  <select id="sim-cctv-segment" class="form-select">
+                    <option value="SEG_001">SEG_001 — Anna Salai Triplicane (CCTV North)</option>
+                    <option value="SEG_002">SEG_002 — Mount Rd Gemini Flyover (CCTV Both)</option>
+                    <option value="SEG_005">SEG_005 — Velachery Taramani Bridge (CCTV South)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Anomaly Vision Classification</label>
+                  <select id="sim-cctv-type" class="form-select">
+                    <option value="waterlogging">🌊 Flood / Road Waterlogging</option>
+                    <option value="accident">💥 Vehicle Collision / Accident</option>
+                    <option value="congestion">🚗 Heavy Congestion / Gridlock</option>
+                    <option value="blockage">🚧 Road Blockage / Debris</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label class="form-label">Anomaly Confidence Score</label>
+                    <span id="sim-cctv-conf-display" class="tabular" style="font-weight: 700; font-size: 12px; color: var(--action-navy-text);">0.65</span>
+                  </div>
+                  <div class="sim-slider-row">
+                    <input type="range" id="sim-cctv-confidence" class="sim-slider" min="0.0" max="1.0" step="0.05" value="0.65">
+                  </div>
+                  <div class="sim-presets-row">
+                    <span class="sim-preset-pill" data-target="sim-cctv-confidence" data-val="0.35">0.35 (Yellow Alert)</span>
+                    <span class="sim-preset-pill" data-target="sim-cctv-confidence" data-val="0.65">0.65 (Red Stage 2)</span>
+                    <span class="sim-preset-pill" data-target="sim-cctv-confidence" data-val="0.90">0.90 (Critical)</span>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <div class="form-group">
+                    <label class="form-label">Vehicles Detected</label>
+                    <input type="number" id="sim-cctv-veh-count" class="form-input tabular" value="18" min="1" max="100">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Stopped Vehicles</label>
+                    <input type="number" id="sim-cctv-stopped-count" class="form-input tabular" value="5" min="0" max="100">
+                  </div>
+                </div>
+
+                <button id="btn-sim-cctv-inject" class="btn btn-primary" style="justify-content: center; margin-top: auto; padding: 10px;">
+                  📹 Inject CCTV Vision Anomaly
+                </button>
+              </div>
+
+              <!-- Column 3: Field Telemetry & Weather Simulator -->
+              <div class="sim-card">
+                <div class="sim-card-header">
+                  <div class="sim-card-title">
+                    <span>3. Weather &amp; Field Telemetry</span>
+                    <span class="badge" style="background: var(--khaki-badge-bg); border: 1px solid var(--border-strong);">SEG_001–006</span>
+                  </div>
+                  <div class="sim-card-sub">Simulate rainfall thresholds, GPS telemetry drops, and complaints.</div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Target Corridor</label>
+                  <select id="sim-field-segment" class="form-select">
+                    <option value="SEG_001">SEG_001 — Anna Salai Underpass (Flood Prone)</option>
+                    <option value="SEG_002">SEG_002 — Mount Road Gemini Flyover</option>
+                    <option value="SEG_003">SEG_003 — Poonamallee High Rd Kilpauk (Flood Prone)</option>
+                    <option value="SEG_004">SEG_004 — Sardar Patel Rd Adyar</option>
+                    <option value="SEG_005">SEG_005 — Velachery Taramani Bridge (Flood Prone)</option>
+                    <option value="SEG_006">SEG_006 — GST Road Chromepet</option>
+                  </select>
+                </div>
+
+                <!-- Sub-panel A: Rain Injection -->
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">A. Rainfall Injection</span>
+                    <span id="sim-rain-display" class="tabular" style="font-weight: 700; font-size: 12px; color: var(--action-navy-text);">18.0 mm/hr</span>
+                  </div>
+                  <div class="sim-slider-row">
+                    <input type="range" id="sim-rain-input" class="sim-slider" min="0" max="60" step="1" value="18">
+                    <button id="btn-sim-inject-rain" class="btn btn-warning" style="padding: 5px 12px; font-size: 11px;">
+                      🌧 Inject Rain
+                    </button>
+                  </div>
+                  <div class="sim-presets-row">
+                    <span class="sim-preset-pill" data-target="sim-rain-input" data-val="14">14mm (SEG_001)</span>
+                    <span class="sim-preset-pill" data-target="sim-rain-input" data-val="18">18mm (SEG_003)</span>
+                    <span class="sim-preset-pill" data-target="sim-rain-input" data-val="20">20mm (SEG_005)</span>
+                    <span class="sim-preset-pill" data-target="sim-rain-input" data-val="35">35mm (Monsoon)</span>
+                  </div>
+                </div>
+
+                <!-- Sub-panel B: Speed Drop -->
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: 10px;">
+                  <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">B. Telemetry Speed Drop</span>
+                  <div style="display: flex; gap: 8px; margin-top: 6px; align-items: center;">
+                    <input type="number" id="sim-speed-kmh" class="form-input tabular" value="8" min="0" max="100" style="width: 80px;" placeholder="km/h">
+                    <span style="font-size: 11px; color: var(--text-muted);">km/h</span>
+                    <input type="number" id="sim-speed-count" class="form-input tabular" value="3" min="1" max="50" style="width: 70px;" placeholder="Vehs">
+                    <span style="font-size: 11px; color: var(--text-muted);">vehs</span>
+                    <button id="btn-sim-inject-speed" class="btn btn-danger" style="padding: 6px 12px; font-size: 11px; margin-left: auto;">
+                      📉 Inject Drop
+                    </button>
+                  </div>
+                  <div class="sim-presets-row">
+                    <span class="sim-preset-pill" data-target="sim-speed-kmh" data-val="8">8 km/h (Gridlock)</span>
+                    <span class="sim-preset-pill" data-target="sim-speed-kmh" data-val="0">0 km/h (Halted)</span>
+                    <span class="sim-preset-pill" data-target="sim-speed-kmh" data-val="20">20 km/h (Slow)</span>
+                  </div>
+                </div>
+
+                <!-- Sub-panel C: Commuter Complaint -->
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: 10px;">
+                  <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">C. Commuter In-App Complaint</span>
+                  <div style="display: flex; gap: 8px; margin-top: 6px;">
+                    <select id="sim-complaint-cat" class="form-select" style="flex: 1; padding: 6px 8px; font-size: 11px;">
+                      <option value="waterlogging">Waterlogging / Flooding</option>
+                      <option value="accident">Accident Reported</option>
+                      <option value="blockage">Road Blockage</option>
+                      <option value="construction">Construction / Debris</option>
+                    </select>
+                    <button id="btn-sim-inject-complaint" class="btn btn-secondary" style="padding: 6px 12px; font-size: 11px;">
+                      🚨 Fire Report
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Console Content Pane 3: Audit Log -->
           <div id="tab-audit-log" class="console-content tab-pane" style="display: none;">
             <table class="audit-table">
               <thead>
@@ -220,7 +429,7 @@
             </table>
           </div>
 
-          <!-- Console Content Pane 3: Flood Zones Reference -->
+          <!-- Console Content Pane 4: Flood Zones Reference -->
           <div id="tab-flood-zones" class="console-content tab-pane" style="display: none;">
             <table class="audit-table">
               <thead>

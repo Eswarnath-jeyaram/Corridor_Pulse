@@ -144,6 +144,50 @@ const CONFIG = {
     }
   ],
 
+  // Demo Acts (Blueprint Section 4)
+  ACTS_METADATA: [
+    {
+      act: 1,
+      name: "Act 1: Normal State (All Corridors Clear)",
+      narrative: "On a normal morning, all monitored Chennai road corridors are GREEN.",
+      target_segment: "ALL",
+      target_state: "GREEN",
+      scenario_file: "01_normal_all_green.json"
+    },
+    {
+      act: 2,
+      name: "Act 2: Rainfall + Proactive Flood Alert (YELLOW)",
+      narrative: "Rain begins over flood-prone Triplicane underpass (18mm). System proactively issues YELLOW warning before vehicle speeds drop.",
+      target_segment: "SEG_001",
+      target_state: "YELLOW",
+      scenario_file: "02_act2_rainfall_flood_risk_yellow.json"
+    },
+    {
+      act: 3,
+      name: "Act 3: Speed Drop + CCTV Anomaly (RED)",
+      narrative: "Vehicles slow to 8 km/h. CCTV vision model confirms anomaly. System escalates SEG_001 to RED (Stage 2 Confirmed).",
+      target_segment: "SEG_001",
+      target_state: "RED",
+      scenario_file: "03_act3_speed_drop_cctv_red.json"
+    },
+    {
+      act: 4,
+      name: "Act 4: One-Click Authority Closure",
+      narrative: "Traffic Authority officer officially closes the underpass. Diversion routes pushed instantly to commuters.",
+      target_segment: "SEG_001",
+      target_state: "RED",
+      scenario_file: "04_act4_authority_closure.json"
+    },
+    {
+      act: 5,
+      name: "Act 5: Drainage Cleared & De-escalation (GREEN)",
+      narrative: "Rain ceases, pumps clear water. Officer hits Resolve to restore corridor to GREEN.",
+      target_segment: "SEG_001",
+      target_state: "GREEN",
+      scenario_file: "05_act5_recovery_reset.json"
+    }
+  ],
+
   // Demo Officer Credentials Helper
   DEMO_OFFICER: {
     officer_id: "AUTH_01",

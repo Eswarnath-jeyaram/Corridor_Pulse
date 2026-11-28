@@ -1,13 +1,14 @@
 /**
  * TrafficSense — Traffic Authority Dashboard Stylesheet
  * Traffic Police White & Khaki Control-Room Aesthetic (Default) & Dark Mode
+ * Includes Demo Event & Rain Simulator Console Styles
  */
 
-:root {
+:root, [data-theme="khaki"] {
   /* =============================================================================
      Default: Crisp Traffic Police White & Khaki Aesthetic
      ============================================================================= */
-  --bg-app: #f4f1ea;              /* Warm off-white canvas */
+  --bg-app: #f8f7f4;              /* Crisp warm off-white canvas */
   --bg-surface: #ffffff;          /* Crisp white cards & panels */
   --bg-surface-elevated: #faf8f4; /* Warm linen elevated panels */
   --bg-surface-hover: #ede7da;    /* Soft sand hover */
@@ -140,24 +141,27 @@ html, body {
   overflow: hidden;
 }
 
-/* Header: Generous, Clean Spacing */
+/* Header: Generous, Clean Spacing & Overflow Protection */
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 64px;
+  min-height: 64px;
   background-color: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
-  padding: 0 28px;
+  padding: 8px 24px;
   flex-shrink: 0;
   z-index: 100;
-  gap: 20px;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 
 .brand-section {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   flex-shrink: 0;
 }
 
@@ -171,6 +175,7 @@ html, body {
   padding: 5px 10px;
   border-radius: 4px;
   border: 1px solid var(--khaki-badge-border);
+  white-space: nowrap;
 }
 
 .brand-title {
@@ -178,17 +183,19 @@ html, body {
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .brand-subtitle {
   font-size: 12px;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex-shrink: 0;
 }
 
@@ -196,23 +203,25 @@ html, body {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-secondary);
-  padding: 6px 14px;
+  padding: 6px 12px;
   background: var(--bg-surface-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: 5px;
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .status-indicator-pill {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  padding: 6px 12px;
   border-radius: 9999px;
   font-size: 11px;
   font-weight: 600;
   border: 1px solid var(--border-subtle);
   background: var(--bg-surface-elevated);
+  white-space: nowrap;
 }
 
 .status-dot {
@@ -227,14 +236,19 @@ html, body {
 .status-dot.polling { background-color: var(--status-yellow); }
 .status-dot.error { background-color: var(--status-red); }
 
+#officer-badge-container {
+  flex-shrink: 0;
+}
+
 .officer-badge {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: var(--khaki-badge-bg);
   border: 1px solid var(--khaki-badge-border);
-  padding: 5px 14px;
+  padding: 5px 12px;
   border-radius: 5px;
+  white-space: nowrap;
 }
 
 .officer-id {
@@ -264,6 +278,7 @@ html, body {
   font-size: 12px;
   font-weight: 500;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .btn-icon:hover {
@@ -283,6 +298,7 @@ html, body {
   align-items: center;
   gap: 8px;
   transition: background-color 0.12s, border-color 0.12s, color 0.12s, box-shadow 0.12s;
+  white-space: nowrap;
 }
 
 .btn-secondary {
@@ -610,7 +626,7 @@ html, body {
    ============================================================================= */
 .workspace-right {
   display: grid;
-  grid-template-rows: 1fr 310px;
+  grid-template-rows: 1fr 340px;
   overflow: hidden;
   background: var(--bg-app);
 }
@@ -691,6 +707,8 @@ html, body {
   border-bottom: 1px solid var(--border-subtle);
   padding: 0 20px;
   gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .console-tab {
@@ -705,6 +723,7 @@ html, body {
   border-left: none;
   border-right: none;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .console-tab:hover {
@@ -719,7 +738,7 @@ html, body {
 .console-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 18px 22px;
 }
 
 .inspector-grid {
@@ -779,6 +798,125 @@ html, body {
 
 .action-note-input:focus {
   border-color: var(--border-accent);
+}
+
+/* =============================================================================
+   Step 3: Demo Event & Rain Simulator Styles
+   ============================================================================= */
+.simulator-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.45fr 1.45fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.sim-card {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sim-card-header {
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 8px;
+}
+
+.sim-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sim-card-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.sim-act-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-act-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.sim-act-btn:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+}
+
+.sim-act-btn.active {
+  border-color: var(--border-accent);
+  background: var(--khaki-badge-bg);
+}
+
+.sim-presets-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.sim-preset-pill {
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.12s;
+}
+
+.sim-preset-pill:hover {
+  background: var(--khaki-badge-bg);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.sim-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sim-slider {
+  flex: 1;
+  accent-color: var(--action-navy);
+}
+
+.sim-slider-val {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  min-width: 45px;
+  text-align: right;
+  color: var(--text-primary);
 }
 
 /* =============================================================================
@@ -933,4 +1071,24 @@ html, body {
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
+}
+
+/* Responsive Rules for Small / Half-Screen Displays */
+@media (max-width: 1280px) {
+  .simulator-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
+  .brand-subtitle { display: none; }
+  .topbar { padding: 8px 16px; gap: 10px; }
+  .topbar-actions { gap: 8px; }
+}
+
+@media (max-width: 900px) {
+  .sys-clock { display: none; }
+  .officer-name { display: none; }
+  .main-workspace { grid-template-columns: 1fr; }
+  .workspace-right { grid-template-rows: 350px auto; }
 }
