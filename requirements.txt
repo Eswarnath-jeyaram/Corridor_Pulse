@@ -2,3 +2,8 @@
 uvicorn[standard]
 pydantic
 httpx
+websockets
+ultralytics
+opencv-python
+requests
+python-dotenv
