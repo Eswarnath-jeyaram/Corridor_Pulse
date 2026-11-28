@@ -1,0 +1,142 @@
+[
+  {
+    "segment_id": "SEG_001",
+    "state": "RED",
+    "stage": 2,
+    "confidence": 0.88,
+    "reason": "rain_threshold_crossed,cctv_anomaly,speed_drop",
+    "disruption_type": "waterlogging",
+    "affected_count": 24,
+    "alt_routes": [
+      "Via Mount Road \u2014 Gemini Flyover Approach (SEG_002) (+9 min)",
+      "Via GST Road \u2014 Chromepet Flyover (SEG_006) (+14 min)"
+    ],
+    "alt_route_details": [
+      {
+        "via_segments": [
+          "SEG_002"
+        ],
+        "extra_minutes": 9.0,
+        "distance_km": 4.1
+      },
+      {
+        "via_segments": [
+          "SEG_006"
+        ],
+        "extra_minutes": 14.0,
+        "distance_km": 6.8
+      }
+    ],
+    "suggested_action": "close",
+    "priority_score": 42.2,
+    "authority_action": null,
+    "authority_officer_id": null,
+    "updated_at": "2026-11-27T10:15:00Z",
+    "valid_until": "2026-11-27T10:45:00Z"
+  },
+  {
+    "segment_id": "SEG_002",
+    "state": "GREEN",
+    "stage": 0,
+    "confidence": 0.05,
+    "reason": "normal_flow",
+    "disruption_type": null,
+    "affected_count": 0,
+    "alt_routes": [],
+    "alt_route_details": [],
+    "suggested_action": null,
+    "priority_score": 0.0,
+    "authority_action": null,
+    "authority_officer_id": null,
+    "updated_at": "2026-11-27T10:15:00Z",
+    "valid_until": null
+  },
+  {
+    "segment_id": "SEG_003",
+    "state": "YELLOW",
+    "stage": 1,
+    "confidence": 0.45,
+    "reason": "rain_threshold_crossed,flood_risk",
+    "disruption_type": "flood_risk",
+    "affected_count": 7,
+    "alt_routes": [
+      "Via Mount Road \u2014 Gemini Flyover Approach (SEG_002) (+6 min)"
+    ],
+    "alt_route_details": [
+      {
+        "via_segments": [
+          "SEG_002"
+        ],
+        "extra_minutes": 6.0,
+        "distance_km": 2.8
+      }
+    ],
+    "suggested_action": "monitor",
+    "priority_score": 15.8,
+    "authority_action": null,
+    "authority_officer_id": null,
+    "updated_at": "2026-11-27T10:14:30Z",
+    "valid_until": "2026-11-27T10:30:00Z"
+  },
+  {
+    "segment_id": "SEG_004",
+    "state": "YELLOW",
+    "stage": 1,
+    "confidence": 0.52,
+    "reason": "fleet_stop,complaint",
+    "disruption_type": "accident",
+    "affected_count": 12,
+    "alt_routes": [
+      "Via Velachery Main Road \u2014 Taramani Bridge (SEG_005) (+5 min)"
+    ],
+    "alt_route_details": [
+      {
+        "via_segments": [
+          "SEG_005"
+        ],
+        "extra_minutes": 5.0,
+        "distance_km": 2.2
+      }
+    ],
+    "suggested_action": "dispatch",
+    "priority_score": 18.7,
+    "authority_action": null,
+    "authority_officer_id": null,
+    "updated_at": "2026-11-27T10:13:00Z",
+    "valid_until": "2026-11-27T10:35:00Z"
+  },
+  {
+    "segment_id": "SEG_005",
+    "state": "GREEN",
+    "stage": 0,
+    "confidence": 0.08,
+    "reason": "normal_flow",
+    "disruption_type": null,
+    "affected_count": 0,
+    "alt_routes": [],
+    "alt_route_details": [],
+    "suggested_action": null,
+    "priority_score": 0.0,
+    "authority_action": null,
+    "authority_officer_id": null,
+    "updated_at": "2026-11-27T10:15:00Z",
+    "valid_until": null
+  },
+  {
+    "segment_id": "SEG_006",
+    "state": "GREEN",
+    "stage": 0,
+    "confidence": 0.02,
+    "reason": "normal_flow",
+    "disruption_type": null,
+    "affected_count": 0,
+    "alt_routes": [],
+    "alt_route_details": [],
+    "suggested_action": null,
+    "priority_score": 0.0,
+    "authority_action": null,
+    "authority_officer_id": null,
+    "updated_at": "2026-11-27T10:15:00Z",
+    "valid_until": null
+  }
+]

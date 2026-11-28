@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="khaki">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrafficSense — Traffic Authority Command & Control</title>
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  
+  <!-- Dashboard Styling (White & Khaki Aesthetic) -->
+  <link rel="stylesheet" href="./css/dashboard.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Topbar Header -->
+    <header class="topbar">
+      <div class="brand-section">
+        <span class="brand-badge">TRAFFIC POLICE | CHENNAI HQ</span>
+        <div>
+          <span class="brand-title">TRAFFICSENSE</span>
+          <span class="brand-subtitle">&nbsp;|&nbsp;Central Corridor Management Console</span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <!-- Live IST Clock -->
+        <div id="sys-clock" class="sys-clock tabular">IST --:--:--</div>
+
+        <!-- Connection Mode / Status Pill -->
+        <div id="connection-status-pill" class="status-indicator-pill" title="Connection Mode">
+          <span id="connection-status-dot" class="status-dot mock"></span>
+          <span id="connection-status-text" class="tabular">MOCK MODE</span>
+        </div>
+
+        <!-- Data Source Switcher -->
+        <div class="mode-select-group" style="display: flex; align-items: center; gap: 6px;">
+          <select id="data-mode-select" class="form-select" style="padding: 4px 8px; font-size: 11px;">
+            <option value="mock">Local Mock</option>
+            <option value="live">Live Backend</option>
+          </select>
+          <button id="btn-reset-mock" class="btn-icon" title="Reset mock data to initial baseline state" style="padding: 4px 8px; font-size: 11px;">↺ Reset</button>
+        </div>
+
+        <!-- Demo Simulator Quick Launcher -->
+        <button id="btn-open-simulator-tab" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" title="Jump to Demo Event & Rain Simulator Console">
+          ⚡ Demo Simulator
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="btn-toggle-theme" class="btn-icon" style="font-size: 11px; padding: 4px 9px;" title="Toggle Khaki / Dark Mode">🌙 Dark Mode</button>
+
+        <!-- Officer Profile Badge / Sign In -->
+        <div id="officer-badge-container"></div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Split -->
+    <main class="main-workspace">
+      <!-- Left Pane: Priority Disruption Queue -->
+      <section class="queue-panel">
+        <div class="panel-header">
+          <div class="panel-title-row">
+            <div class="panel-title">
+              <span>Priority Disruption Queue</span>
+              <span id="queue-count" class="count-pill tabular">0 / 6</span>
+            </div>
+            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Ranked by Priority Score</span>
+          </div>
+
+          <!-- Filter Tabs -->
+          <div class="queue-filters">
+            <button class="filter-tab active" data-filter="all">All Corridors</button>
+            <button class="filter-tab" data-filter="RED" style="color: var(--status-red-text);">RED (Disruptions)</button>
+            <button class="filter-tab" data-filter="YELLOW" style="color: var(--status-yellow-text);">YELLOW (Alerts)</button>
+            <button class="filter-tab" data-filter="GREEN" style="color: var(--status-green-text);">GREEN (Clear)</button>
+          </div>
+        </div>
+
+        <!-- Queue Scrollable List -->
+        <div id="queue-list" class="queue-list">
+          <!-- Dynamically populated by dashboard.js -->
+        </div>
+      </section>
+
+      <!-- Right Pane: Map & Segment Inspector -->
+      <section class="workspace-right">
+        <!-- Top Half: Map View -->
+        <div class="map-container">
+          <div id="map"></div>
+          <div id="map-fallback" class="map-fallback-view"></div>
+
+          <!-- Map Layer Controls Overlay -->
+          <div class="map-overlay-card">
+            <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Layers &amp; View</span>
+            <div class="map-layer-toggles">
+              <label class="layer-toggle">
+                <input type="checkbox" id="toggle-flood-layer" checked>
+                <span>Flood Hazard Zones (FZ)</span>
+              </label>
+              <button id="btn-toggle-map-view" class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px; margin-top: 4px; width: 100%; justify-content: center;">
+                📐 View Schematic View
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Half: Console & Command Actions -->
+        <div class="command-console">
+          <!-- Console Navigation Tabs -->
+          <div class="console-tabs">
+            <button class="console-tab active" data-target="tab-inspector">Segment Command &amp; Actions</button>
+            <button class="console-tab" data-target="tab-simulator">⚡ Demo Event &amp; Rain Simulator</button>
+            <button class="console-tab" data-target="tab-audit-log">Authority Audit Log</button>
+            <button class="console-tab" data-target="tab-flood-zones">Historical Flood Zones</button>
+          </div>
+
+          <!-- Console Content Pane 1: Inspector & Actions -->
+          <div id="tab-inspector" class="console-content tab-pane">
+            <div class="inspector-grid">
+              <!-- Left: Segment Specification Table -->
+              <div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                  <div>
+                    <span id="insp-segment-id" class="tabular" style="font-weight: 700; font-size: 14px;">SEG_001</span>
+                    <span id="insp-road-name" style="margin-left: 10px; color: var(--text-secondary); font-size: 13px; font-weight: 600;">—</span>
+                  </div>
+                  <span id="insp-status-badge" class="badge badge-state-red">RED</span>
+                </div>
+
+                <table class="detail-table tabular">
+                  <tbody>
+                    <tr>
+                      <td class="label">Road Type / Limit</td>
+                      <td><span id="insp-road-type">—</span> &nbsp;(<span id="insp-speed-limit">—</span>)</td>
+                      <td class="label">Priority Score</td>
+                      <td><strong id="insp-priority-score" style="color: var(--action-navy-text);">0.0</strong></td>
+                    </tr>
+                    <tr>
+                      <td class="label">Confidence Stage</td>
+                      <td id="insp-confidence">—</td>
+                      <td class="label">Disruption Type</td>
+                      <td id="insp-disruption-type">—</td>
+                    </tr>
+                    <tr>
+                      <td class="label">Signals / Reason</td>
+                      <td id="insp-reason" colspan="3" style="font-size: 11px; color: var(--text-secondary);">—</td>
+                    </tr>
+                    <tr>
+                      <td class="label">Traffic Impact</td>
+                      <td id="insp-affected-count">—</td>
+                      <td class="label">CCTV Status</td>
+                      <td id="insp-cctv-status">—</td>
+                    </tr>
+                    <tr>
+                      <td class="label">Flood Vulnerability</td>
+                      <td id="insp-flood-prone" colspan="3">—</td>
+                    </tr>
+                    <tr>
+                      <td class="label">Alternate Routes</td>
+                      <td id="insp-alt-routes" colspan="3" style="font-size: 11px;">—</td>
+                    </tr>
+                    <tr>
+                      <td class="label">Last Action</td>
+                      <td id="insp-authority-action" colspan="3" style="font-size: 11px;">None</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Right: One-Click Authority Action Controls -->
+              <div class="action-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-primary);">
+                    One-Click Authority Intervention
+                  </span>
+                  <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Writes to CentralState</span>
+                </div>
+
+                <!-- Tactical Note Input -->
+                <input 
+                  type="text" 
+                  id="action-note-input" 
+                  class="action-note-input" 
+                  placeholder="Optional tactical dispatch note (e.g. Underpass submerged, traffic diverted to Gemini Flyover)..."
+                  maxlength="250"
+                />
+
+                <!-- Action Buttons Row -->
+                <div class="action-buttons-row">
+                  <button id="btn-action-close" class="btn btn-danger" title="Officially close corridor (Triggers RED + Rerouting)">
+                    🚫 Close Road
+                  </button>
+                  <button id="btn-action-divert" class="btn btn-warning" title="Issue dynamic diversion alert to commuters">
+                    ↪ Divert Traffic
+                  </button>
+                  <button id="btn-action-dispatch" class="btn btn-primary" title="Dispatch traffic police / municipal field unit">
+                    🚔 Dispatch Unit
+                  </button>
+                  <button id="btn-action-monitor" class="btn btn-secondary" title="Acknowledge disruption and monitor feed">
+                    👁 Acknowledge &amp; Monitor
+                  </button>
+                  <button id="btn-action-resolve" class="btn btn-success" title="Mark disruption cleared and restore GREEN status">
+                    ✓ Mark Resolved
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Console Content Pane 2: Step 3 Full Demo Event & Rain Simulator -->
+          <div id="tab-simulator" class="console-content tab-pane" style="display: none;">
+            <div class="simulator-grid">
+              
+              <!-- Column 1: Demo Act Loader (Acts 1-5) -->
+              <div class="sim-card">
+                <div class="sim-card-header">
+                  <div class="sim-card-title">
+                    <span>1. Master Blueprint Acts</span>
+                    <span class="badge" style="background: var(--khaki-badge-bg); border: 1px solid var(--border-strong);">ACTS 1–5</span>
+                  </div>
+                  <div class="sim-card-sub">Instant walkthrough of the 5 live rehearsal demo scenarios.</div>
+                </div>
+
+                <div class="sim-act-buttons">
+                  <button class="sim-act-btn" data-act="1">
+                    <div>
+                      <div>Act 1: Normal Morning</div>
+                      <div style="font-size: 10px; color: var(--text-muted); font-weight: normal;">All 6 corridors GREEN (Stage 0)</div>
+                    </div>
+                    <span class="badge badge-state-green">GREEN</span>
+                  </button>
+
+                  <button class="sim-act-btn" data-act="2">
+                    <div>
+                      <div>Act 2: Rainfall + Flood Alert</div>
+                      <div style="font-size: 10px; color: var(--text-muted); font-weight: normal;">18 mm/hr on SEG_001 → Stage 1 Alert</div>
+                    </div>
+                    <span class="badge badge-state-yellow">YELLOW</span>
+                  </button>
+
+                  <button class="sim-act-btn" data-act="3">
+                    <div>
+                      <div>Act 3: Speed Drop + CCTV Anomaly</div>
+                      <div style="font-size: 10px; color: var(--text-muted); font-weight: normal;">Speed drops to 8 km/h + CCTV 0.65 → Confirmed</div>
+                    </div>
+                    <span class="badge badge-state-red">RED</span>
+                  </button>
+
+                  <button class="sim-act-btn" data-act="4">
+                    <div>
+                      <div>Act 4: One-Click Authority Closure</div>
+                      <div style="font-size: 10px; color: var(--text-muted); font-weight: normal;">Officer executes Close Action → Diversion</div>
+                    </div>
+                    <span class="badge badge-state-red">CLOSED</span>
+                  </button>
+
+                  <button class="sim-act-btn" data-act="5">
+                    <div>
+                      <div>Act 5: Drainage Recovery</div>
+                      <div style="font-size: 10px; color: var(--text-muted); font-weight: normal;">Water recedes → Restore to normal</div>
+                    </div>
+                    <span class="badge badge-state-green">RESOLVED</span>
+                  </button>
+
+                  <button id="btn-sim-reset-all" class="btn btn-secondary" style="width: 100%; justify-content: center; margin-top: 6px; font-weight: 700; border-color: var(--border-strong);">
+                    ↺ Reset All Corridors to GREEN (Stage 0)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Column 2: CCTV Vision Anomaly Simulator -->
+              <div class="sim-card">
+                <div class="sim-card-header">
+                  <div class="sim-card-title">
+                    <span>2. CCTV Vision Anomaly</span>
+                    <span class="badge" style="background: var(--action-navy-bg); color: var(--action-navy-text); border: 1px solid var(--action-navy-border);">YOLOv8n</span>
+                  </div>
+                  <div class="sim-card-sub">Simulate video analysis output for corridors with CCTV active.</div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">CCTV Segment</label>
+                  <select id="sim-cctv-segment" class="form-select">
+                    <option value="SEG_001">SEG_001 — Anna Salai Triplicane (CCTV North)</option>
+                    <option value="SEG_002">SEG_002 — Mount Rd Gemini Flyover (CCTV Both)</option>
+                    <option value="SEG_005">SEG_005 — Velachery Taramani Bridge (CCTV South)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Anomaly Vision Classification</label>
+                  <select id="sim-cctv-type" class="form-select">
+                    <option value="waterlogging">🌊 Flood / Road Waterlogging</option>
+                    <option value="accident">💥 Vehicle Collision / Accident</option>
+                    <option value="congestion">🚗 Heavy Congestion / Gridlock</option>
+                    <option value="blockage">🚧 Road Blockage / Debris</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label class="form-label">Anomaly Confidence Score</label>
+                    <span id="sim-cctv-conf-display" class="tabular" style="font-weight: 700; font-size: 12px; color: var(--action-navy-text);">0.65</span>
+                  </div>
+                  <div class="sim-slider-row">
+                    <input type="range" id="sim-cctv-confidence" class="sim-slider" min="0.0" max="1.0" step="0.05" value="0.65">
+                  </div>
+                  <div class="sim-presets-row">
+                    <span class="sim-preset-pill" data-target="sim-cctv-confidence" data-val="0.35">0.35 (Yellow Alert)</span>
+                    <span class="sim-preset-pill" data-target="sim-cctv-confidence" data-val="0.65">0.65 (Red Stage 2)</span>
+                    <span class="sim-preset-pill" data-target="sim-cctv-confidence" data-val="0.90">0.90 (Critical)</span>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <div class="form-group">
+                    <label class="form-label">Vehicles Detected</label>
+                    <input type="number" id="sim-cctv-veh-count" class="form-input tabular" value="18" min="1" max="100">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Stopped Vehicles</label>
+                    <input type="number" id="sim-cctv-stopped-count" class="form-input tabular" value="5" min="0" max="100">
+                  </div>
+                </div>
+
+                <button id="btn-sim-cctv-inject" class="btn btn-primary" style="justify-content: center; margin-top: auto; padding: 10px;">
+                  📹 Inject CCTV Vision Anomaly
+                </button>
+              </div>
+
+              <!-- Column 3: Field Telemetry & Weather Simulator -->
+              <div class="sim-card">
+                <div class="sim-card-header">
+                  <div class="sim-card-title">
+                    <span>3. Weather &amp; Field Telemetry</span>
+                    <span class="badge" style="background: var(--khaki-badge-bg); border: 1px solid var(--border-strong);">SEG_001–006</span>
+                  </div>
+                  <div class="sim-card-sub">Simulate rainfall thresholds, GPS telemetry drops, and complaints.</div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Target Corridor</label>
+                  <select id="sim-field-segment" class="form-select">
+                    <option value="SEG_001">SEG_001 — Anna Salai Underpass (Flood Prone)</option>
+                    <option value="SEG_002">SEG_002 — Mount Road Gemini Flyover</option>
+                    <option value="SEG_003">SEG_003 — Poonamallee High Rd Kilpauk (Flood Prone)</option>
+                    <option value="SEG_004">SEG_004 — Sardar Patel Rd Adyar</option>
+                    <option value="SEG_005">SEG_005 — Velachery Taramani Bridge (Flood Prone)</option>
+                    <option value="SEG_006">SEG_006 — GST Road Chromepet</option>
+                  </select>
+                </div>
+
+                <!-- Sub-panel A: Rain Injection -->
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">A. Rainfall Injection</span>
+                    <span id="sim-rain-display" class="tabular" style="font-weight: 700; font-size: 12px; color: var(--action-navy-text);">18.0 mm/hr</span>
+                  </div>
+                  <div class="sim-slider-row">
+                    <input type="range" id="sim-rain-input" class="sim-slider" min="0" max="60" step="1" value="18">
+                    <button id="btn-sim-inject-rain" class="btn btn-warning" style="padding: 5px 12px; font-size: 11px;">
+                      🌧 Inject Rain
+                    </button>
+                  </div>
+                  <div class="sim-presets-row">
+                    <span class="sim-preset-pill" data-target="sim-rain-input" data-val="14">14mm (SEG_001)</span>
+                    <span class="sim-preset-pill" data-target="sim-rain-input" data-val="18">18mm (SEG_003)</span>
+                    <span class="sim-preset-pill" data-target="sim-rain-input" data-val="20">20mm (SEG_005)</span>
+                    <span class="sim-preset-pill" data-target="sim-rain-input" data-val="35">35mm (Monsoon)</span>
+                  </div>
+                </div>
+
+                <!-- Sub-panel B: Speed Drop -->
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: 10px;">
+                  <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">B. Telemetry Speed Drop</span>
+                  <div style="display: flex; gap: 8px; margin-top: 6px; align-items: center;">
+                    <input type="number" id="sim-speed-kmh" class="form-input tabular" value="8" min="0" max="100" style="width: 80px;" placeholder="km/h">
+                    <span style="font-size: 11px; color: var(--text-muted);">km/h</span>
+                    <input type="number" id="sim-speed-count" class="form-input tabular" value="3" min="1" max="50" style="width: 70px;" placeholder="Vehs">
+                    <span style="font-size: 11px; color: var(--text-muted);">vehs</span>
+                    <button id="btn-sim-inject-speed" class="btn btn-danger" style="padding: 6px 12px; font-size: 11px; margin-left: auto;">
+                      📉 Inject Drop
+                    </button>
+                  </div>
+                  <div class="sim-presets-row">
+                    <span class="sim-preset-pill" data-target="sim-speed-kmh" data-val="8">8 km/h (Gridlock)</span>
+                    <span class="sim-preset-pill" data-target="sim-speed-kmh" data-val="0">0 km/h (Halted)</span>
+                    <span class="sim-preset-pill" data-target="sim-speed-kmh" data-val="20">20 km/h (Slow)</span>
+                  </div>
+                </div>
+
+                <!-- Sub-panel C: Commuter Complaint -->
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: 10px;">
+                  <span style="font-size: 11px; font-weight: 700; text-transform: uppercase;">C. Commuter In-App Complaint</span>
+                  <div style="display: flex; gap: 8px; margin-top: 6px;">
+                    <select id="sim-complaint-cat" class="form-select" style="flex: 1; padding: 6px 8px; font-size: 11px;">
+                      <option value="waterlogging">Waterlogging / Flooding</option>
+                      <option value="accident">Accident Reported</option>
+                      <option value="blockage">Road Blockage</option>
+                      <option value="construction">Construction / Debris</option>
+                    </select>
+                    <button id="btn-sim-inject-complaint" class="btn btn-secondary" style="padding: 6px 12px; font-size: 11px;">
+                      🚨 Fire Report
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Console Content Pane 3: Audit Log -->
+          <div id="tab-audit-log" class="console-content tab-pane" style="display: none;">
+            <table class="audit-table">
+              <thead>
+                <tr>
+                  <th style="width: 120px;">Time</th>
+                  <th style="width: 110px;">Segment</th>
+                  <th style="width: 120px;">Action Taken</th>
+                  <th style="width: 130px;">Officer ID</th>
+                  <th>Tactical Note / Log</th>
+                </tr>
+              </thead>
+              <tbody id="audit-table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Console Content Pane 4: Flood Zones Reference -->
+          <div id="tab-flood-zones" class="console-content tab-pane" style="display: none;">
+            <table class="audit-table">
+              <thead>
+                <tr>
+                  <th style="width: 90px;">Zone ID</th>
+                  <th style="width: 100px;">Segment</th>
+                  <th>Corridor Name</th>
+                  <th style="width: 130px;">Rain Threshold</th>
+                  <th style="width: 130px;">Severe Level</th>
+                  <th style="width: 110px;">Onset Time</th>
+                  <th>Drainage / Vulnerability Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="tabular"><strong>FZ_001</strong></td>
+                  <td class="tabular">SEG_001</td>
+                  <td>Anna Salai — Triplicane Underpass</td>
+                  <td class="tabular">14.0 mm/hr</td>
+                  <td class="tabular">25.0 mm/hr</td>
+                  <td class="tabular">~20 min</td>
+                  <td>Poor drainage; underpass dips below stormwater overflow level.</td>
+                </tr>
+                <tr>
+                  <td class="tabular"><strong>FZ_002</strong></td>
+                  <td class="tabular">SEG_003</td>
+                  <td>Poonamallee High Road — Kilpauk</td>
+                  <td class="tabular">18.0 mm/hr</td>
+                  <td class="tabular">30.0 mm/hr</td>
+                  <td class="tabular">~35 min</td>
+                  <td>Fair drainage; road dips near Kilpauk Medical College.</td>
+                </tr>
+                <tr>
+                  <td class="tabular"><strong>FZ_003</strong></td>
+                  <td class="tabular">SEG_005</td>
+                  <td>Velachery Main Road — Taramani</td>
+                  <td class="tabular">20.0 mm/hr</td>
+                  <td class="tabular">35.0 mm/hr</td>
+                  <td class="tabular">~45 min</td>
+                  <td>Poor drainage; Buckingham canal overflow during monsoon.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Authority Login Gate Modal -->
+    <div id="login-modal" class="modal-backdrop">
+      <div class="login-card">
+        <div class="login-header">
+          <span class="login-badge">AUTHENTICATED ACCESS CONTROL</span>
+          <h2 class="login-title">Traffic Police Operations Terminal</h2>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+            Officer authentication required to execute corridor intervention controls.
+          </div>
+        </div>
+
+        <form id="login-form">
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">Officer ID / Badge</label>
+            <input type="text" id="login-officer-id" class="form-input tabular" placeholder="e.g. AUTH_01" required value="AUTH_01" />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">Officer Name</label>
+            <input type="text" id="login-officer-name" class="form-input" placeholder="e.g. Insp. R. Senthil Nathan" required value="Insp. R. Senthil Nathan" />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">Password / PIN</label>
+            <input type="password" id="login-password" class="form-input" value="traffic2026" />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 18px;">
+            <label class="form-label">Control Room Sector</label>
+            <select id="login-zone" class="form-select">
+              <option value="central">Central Control — Anna Salai / Triplicane Corridor</option>
+              <option value="north">North Control — Kilpauk / Poonamallee Corridor</option>
+              <option value="south">South Control — Adyar / Velachery Corridor</option>
+            </select>
+          </div>
+
+          <div class="login-actions">
+            <button type="submit" class="btn btn-primary" style="justify-content: center; padding: 11px;">
+              Sign In to Command Console
+            </button>
+            <button type="button" id="btn-quick-fill-login" class="btn btn-secondary" style="justify-content: center; padding: 10px;">
+              ⚡ Demo Quick-Fill &amp; Sign In
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+  </div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Application JS Modules -->
+  <script src="./js/config.js"></script>
+  <script src="./js/api.js"></script>
+  <script src="./js/dashboard.js"></script>
+</body>
+</html>
