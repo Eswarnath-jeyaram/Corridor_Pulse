@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrafficSense — Commuter View</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3e;
+    --text: #e2e8f0; --muted: #64748b; --accent: #6366f1;
+    --green: #22c55e; --yellow: #eab308; --red: #ef4444;
+    --green-bg: rgba(34,197,94,.15); --yellow-bg: rgba(234,179,8,.15); --red-bg: rgba(239,68,68,.15);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+  /* ── Header ── */
+  header{background:var(--surface);border-bottom:1px solid var(--border);
+    padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo svg{width:28px;height:28px;flex-shrink:0}
+  .logo-text{font-size:1.1rem;font-weight:700;letter-spacing:.5px}
+  .logo-sub{font-size:.7rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+  .header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  #ws-badge{font-size:.7rem;padding:3px 8px;border-radius:20px;background:#1e293b;border:1px solid var(--border)}
+  #ws-badge.live{color:var(--green);border-color:var(--green)}
+  #ws-badge.poll{color:var(--yellow);border-color:var(--yellow)}
+  #last-update{font-size:.72rem;color:var(--muted)}
+  .nav-link{font-size:.75rem;color:#a5b4fc;text-decoration:none;border:1px solid var(--border);
+    padding:5px 10px;border-radius:8px}
+  .nav-link:hover{border-color:var(--accent)}
+
+  /* ── Complaint modal trigger ── */
+  .btn-report{background:var(--accent);color:#fff;border:none;padding:8px 16px;
+    border-radius:8px;font-size:.82rem;cursor:pointer;font-weight:600;transition:opacity .15s}
+  .btn-report:hover{opacity:.85}
+
+  /* ── Main layout ── */
+  main{max-width:1160px;margin:0 auto;padding:20px 16px}
+  .top-row{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+  .page-title{font-size:1.4rem;font-weight:700;margin-bottom:4px}
+  .page-sub{font-size:.82rem;color:var(--muted)}
+
+  /* ── Rain alert banner ── */
+  #rain-banner{display:none;background:rgba(59,130,246,.15);border:1px solid #3b82f6;
+    border-radius:10px;padding:10px 16px;margin-bottom:16px;font-size:.82rem;
+    color:#93c5fd}
+  #rain-banner.visible{display:flex;align-items:center;gap:8px}
+
+  /* ── Summary bar ── */
+  .summary-bar{display:flex;gap:12px;flex-wrap:wrap}
+  .sum-chip{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+    padding:8px 16px;text-align:center;min-width:85px}
+  .sum-chip .num{font-size:1.3rem;font-weight:800}
+  .sum-chip .label{font-size:.66rem;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+  .sum-chip.g .num{color:var(--green)}
+  .sum-chip.y .num{color:var(--yellow)}
+  .sum-chip.r .num{color:var(--red)}
+
+  /* ── Map container ── */
+  .map-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    overflow:hidden;margin-bottom:20px}
+  .map-toolbar{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;
+    border-bottom:1px solid var(--border);font-size:.78rem;flex-wrap:wrap;gap:8px}
+  .map-legend{display:flex;gap:12px;align-items:center;color:var(--muted)}
+  .leg-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+  .btn-radar{background:#1e293b;border:1px solid var(--border);color:var(--text);
+    padding:5px 11px;border-radius:7px;font-size:.74rem;cursor:pointer;font-weight:600}
+  .btn-radar.active{border-color:#3b82f6;color:#93c5fd;background:rgba(59,130,246,.15)}
+  #map{height:340px;width:100%;background:#111827}
+  .map-offline{padding:24px;text-align:center;color:var(--muted);font-size:.82rem}
+
+  /* ── Segment grid ── */
+  .segments-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .seg-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:16px;transition:border-color .3s, box-shadow .3s;position:relative;overflow:hidden}
+  .seg-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
+  .seg-card.GREEN::before{background:var(--green)}
+  .seg-card.YELLOW::before{background:var(--yellow)}
+  .seg-card.RED::before{background:var(--red);box-shadow:0 0 12px var(--red-bg)}
+  .seg-card.GREEN{border-color:rgba(34,197,94,.3)}
+  .seg-card.YELLOW{border-color:rgba(234,179,8,.35)}
+  .seg-card.RED{border-color:rgba(239,68,68,.45)}
+
+  .seg-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+  .seg-id{font-size:.7rem;color:var(--muted);font-weight:600;letter-spacing:.5px}
+  .seg-name{font-size:.95rem;font-weight:700;line-height:1.3;flex:1}
+  .state-pill{font-size:.7rem;font-weight:700;padding:4px 10px;border-radius:20px;
+    letter-spacing:.5px;flex-shrink:0;margin-left:8px}
+  .state-pill.GREEN{background:var(--green-bg);color:var(--green)}
+  .state-pill.YELLOW{background:var(--yellow-bg);color:var(--yellow)}
+  .state-pill.RED{background:var(--red-bg);color:var(--red)}
+
+  .seg-meta{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .meta-chip{font-size:.7rem;padding:2px 8px;border-radius:6px;
+    background:#1e293b;color:var(--muted);border:1px solid var(--border)}
+  .meta-chip.stage-2{color:var(--red);border-color:rgba(239,68,68,.4)}
+
+  .seg-reason{font-size:.78rem;color:var(--muted);margin:4px 0}
+  .seg-reason span{color:var(--text)}
+
+  /* alt route */
+  .alt-route-box{margin-top:10px;padding:8px 10px;background:rgba(99,102,241,.1);
+    border:1px solid rgba(99,102,241,.25);border-radius:8px;font-size:.75rem;color:#a5b4fc}
+  .alt-route-box strong{color:#c7d2fe;display:block;margin-bottom:3px}
+
+  /* complaint btn per card */
+  .btn-card-report{background:transparent;border:1px solid var(--border);color:var(--muted);
+    padding:5px 12px;border-radius:6px;font-size:.72rem;cursor:pointer;margin-top:10px;
+    transition:all .15s}
+  .btn-card-report:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* ── Complaint modal ── */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;
+    display:none;align-items:center;justify-content:center;padding:16px}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:24px;max-width:420px;width:100%}
+  .modal h3{font-size:1rem;font-weight:700;margin-bottom:16px}
+  .form-group{margin-bottom:12px}
+  .form-group label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;font-weight:600}
+  .form-group select,.form-group input,.form-group textarea{
+    width:100%;background:#0f1117;border:1px solid var(--border);color:var(--text);
+    padding:8px 10px;border-radius:8px;font-size:.82rem;outline:none}
+  .form-group select:focus,.form-group input:focus,.form-group textarea:focus{
+    border-color:var(--accent)}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+  .btn-cancel{background:transparent;border:1px solid var(--border);color:var(--muted);
+    padding:8px 14px;border-radius:8px;font-size:.8rem;cursor:pointer}
+  .btn-submit{background:var(--accent);color:#fff;border:none;padding:8px 16px;
+    border-radius:8px;font-size:.8rem;cursor:pointer;font-weight:600}
+  .btn-submit:disabled{opacity:.5;cursor:not-allowed}
+
+  /* ── Status toast ── */
+  #toast{position:fixed;bottom:24px;right:24px;background:#1e293b;border:1px solid var(--border);
+    color:var(--text);padding:10px 18px;border-radius:10px;font-size:.8rem;
+    transform:translateY(80px);transition:transform .3s;z-index:1100;max-width:280px}
+  #toast.show{transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="14" cy="14" r="13" stroke="#6366f1" stroke-width="1.5"/>
+      <circle cx="14" cy="8"  r="3" fill="#ef4444"/>
+      <circle cx="14" cy="14" r="3" fill="#eab308"/>
+      <circle cx="14" cy="20" r="3" fill="#22c55e"/>
+    </svg>
+    <div>
+      <div class="logo-text">TrafficSense</div>
+      <div class="logo-sub">Commuter View</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <a class="nav-link" href="../authority/index.html">Authority Dashboard →</a>
+    <span id="ws-badge" class="poll">⬤ Polling</span>
+    <span id="last-update">—</span>
+    <button class="btn-report" onclick="openModal()">+ Report Issue</button>
+  </div>
+</header>
+
+<main>
+  <div class="top-row">
+    <div>
+      <div class="page-title">Chennai Road Status</div>
+      <div class="page-sub">Live disruption monitoring — updated in real-time</div>
+    </div>
+    <div class="summary-bar">
+      <div class="sum-chip g"><div class="num" id="cnt-green">—</div><div class="label">Clear</div></div>
+      <div class="sum-chip y"><div class="num" id="cnt-yellow">—</div><div class="label">Caution</div></div>
+      <div class="sum-chip r"><div class="num" id="cnt-red">—</div><div class="label">Disrupted</div></div>
+    </div>
+  </div>
+
+  <div id="rain-banner">
+    🌧️ <span id="rain-text">Heavy rainfall detected on monitored corridors.</span>
+  </div>
+
+  <!-- Live Leaflet Map -->
+  <div class="map-card">
+    <div class="map-toolbar">
+      <div class="map-legend">
+        <span><span class="leg-dot" style="background:var(--green)"></span>Clear</span>
+        <span><span class="leg-dot" style="background:var(--yellow)"></span>Stage 1 Caution</span>
+        <span><span class="leg-dot" style="background:var(--red)"></span>Stage 2 Disrupted</span>
+      </div>
+      <button class="btn-radar" id="btn-radar" onclick="toggleRainRadar()">🌧️ RainViewer Radar</button>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <div class="segments-grid" id="segments-grid">
+    <!-- Cards inserted by JS -->
+  </div>
+</main>
+
+<!-- Complaint Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3>Report a Road Issue</h3>
+    <div class="form-group">
+      <label>Segment</label>
+      <select id="modal-segment"></select>
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="modal-category">
+        <option value="waterlogging">Waterlogging</option>
+        <option value="accident">Accident</option>
+        <option value="blockage">Blockage / Fallen tree</option>
+        <option value="construction">Construction</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Your role</label>
+      <select id="modal-reporter">
+        <option value="commuter">Commuter</option>
+        <option value="fleet">Fleet driver (bus / taxi)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Description (optional)</label>
+      <textarea id="modal-desc" rows="2" placeholder="Brief description…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-submit" id="btn-submit" onclick="submitComplaint()">Submit Report</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const HOST_BASE = location.hostname || 'localhost';
+const API = (location.port === '8000') ? '' : `${location.protocol === 'https:' ? 'https:' : 'http:'}//${HOST_BASE}:8000`;
+const WS_PROTO = location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_URL = (location.port === '8000') ? `${WS_PROTO}//${location.host}/ws/state` : `${WS_PROTO}//${HOST_BASE}:8000/ws/state`;
+
+const STATE_COLOR = { GREEN: '#22c55e', YELLOW: '#eab308', RED: '#ef4444' };
+
+let segments = [];
+let states   = {};
+let routeCache = {};
+let wsAlive  = false;
+let ws;
+
+// Leaflet map state
+let map = null;
+let segLayers = {};
+let radarLayer = null;
+let radarActive = false;
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function ts() {
+  return new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function markUpdated() {
+  document.getElementById('last-update').textContent = `Updated ${ts()}`;
+}
+
+// ── Leaflet Map ─────────────────────────────────────────────────────────────
+
+function initMap() {
+  if (typeof L === 'undefined') {
+    document.getElementById('map').innerHTML =
+      '<div class="map-offline">Map tiles unavailable offline — live segment cards below remain active.</div>';
+    return;
+  }
+  map = L.map('map').setView([13.025, 80.225], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    maxZoom: 18,
+  }).addTo(map);
+  renderMapLayers();
+}
+
+function renderMapLayers() {
+  if (!map || !segments.length) return;
+  segments.forEach(seg => {
+    const st = states[seg.segment_id] || { state: 'GREEN', stage: 0, confidence: 0, reason: '', alt_routes: [] };
+    const color = STATE_COLOR[st.state] || '#22c55e';
+    const weight = st.state === 'RED' ? 8 : st.state === 'YELLOW' ? 7 : 5;
+    const coords = [[seg.lat_start, seg.lon_start], [seg.lat_end, seg.lon_end]];
+
+    const altList = formatAltRoutes(st);
+    const altHtml = (altList.length && st.state !== 'GREEN')
+      ? `<br><b>Alternate:</b> ${altList.join(', ')}` : '';
+    const authHtml = st.authority_action
+      ? `<br><b>Authority:</b> ${st.authority_action.toUpperCase()}` : '';
+    const popupHtml = `
+      <b>${seg.segment_id}: ${seg.name}</b><br>
+      Status: <b>${st.state}</b> (Stage ${st.stage}, ${(st.confidence*100).toFixed(0)}%)<br>
+      ${st.reason ? 'Signals: ' + st.reason : 'Traffic flowing normally'}
+      ${authHtml}${altHtml}
+    `;
+
+    if (segLayers[seg.segment_id]) {
+      segLayers[seg.segment_id].setStyle({ color, weight, opacity: 0.9 });
+      segLayers[seg.segment_id].setPopupContent(popupHtml);
+    } else {
+      const poly = L.polyline(coords, { color, weight, opacity: 0.9 }).addTo(map);
+      poly.bindPopup(popupHtml);
+      segLayers[seg.segment_id] = poly;
+    }
+  });
+}
+
+async function toggleRainRadar() {
+  if (!map) return;
+  const btn = document.getElementById('btn-radar');
+  if (radarActive && radarLayer) {
+    map.removeLayer(radarLayer);
+    radarActive = false;
+    btn.classList.remove('active');
+    return;
+  }
+  try {
+    const res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+    const data = await res.json();
+    const past = data?.radar?.past;
+    if (!past || !past.length) { showToast('No radar frames available'); return; }
+    const latest = past[past.length - 1];
+    radarLayer = L.tileLayer(
+      `${data.host}${latest.path}/256/{z}/{x}/{y}/2/1_1.png`,
+      { opacity: 0.55, zIndex: 10 }
+    ).addTo(map);
+    radarActive = true;
+    btn.classList.add('active');
+    showToast('🌧️ RainViewer radar enabled');
+  } catch {
+    showToast('RainViewer unavailable offline');
+  }
+}
+
+function formatAltRoutes(s) {
+  const cached = routeCache[s.segment_id];
+  if (cached && cached.alt_routes && cached.alt_routes.length) {
+    const delay = cached.delay_minutes ? ` (+${cached.delay_minutes} min)` : '';
+    return cached.alt_routes.map(r => {
+      if (typeof r === 'string') return r;
+      if (r.description) return `${r.description} (+${r.extra_minutes} min, ${r.distance_km} km)`;
+      if (r.summary) return `${r.summary}${delay}`;
+      return JSON.stringify(r);
+    });
+  }
+  if (Array.isArray(s.alt_routes) && s.alt_routes.length) return s.alt_routes;
+  return [];
+}
+
+async function ensureRoutes(segId) {
+  try {
+    const rr = await fetch(`${API}/api/routes/${segId}`);
+    if (rr.ok) {
+      routeCache[segId] = await rr.json();
+      renderCardsOnly();
+      renderMapLayers();
+    }
+  } catch {}
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+
+function render(stateList) {
+  stateList.forEach(s => {
+    if (!s || !s.segment_id) return;
+    states[s.segment_id] = s;
+    if (s.state !== 'GREEN') ensureRoutes(s.segment_id);
+  });
+  renderMapLayers();
+  renderCardsOnly();
+  markUpdated();
+}
+
+function renderCardsOnly() {
+  const all = Object.values(states);
+  document.getElementById('cnt-green').textContent  = all.filter(s=>s.state==='GREEN').length;
+  document.getElementById('cnt-yellow').textContent = all.filter(s=>s.state==='YELLOW').length;
+  document.getElementById('cnt-red').textContent    = all.filter(s=>s.state==='RED').length;
+
+  // Rain banner
+  const rainSeg = all.find(s => s.reason && (s.reason.includes('flood') || s.reason.includes('rain')));
+  const banner  = document.getElementById('rain-banner');
+  if (rainSeg) {
+    document.getElementById('rain-text').textContent =
+      `Heavy rainfall alert: ${rainSeg.segment_id} is flood-risk. Alternate routes suggested.`;
+    banner.classList.add('visible');
+  } else {
+    banner.classList.remove('visible');
+  }
+
+  // Cards
+  const grid = document.getElementById('segments-grid');
+  grid.innerHTML = '';
+  all.sort((a,b) => {
+    const order = {RED:0,YELLOW:1,GREEN:2};
+    return (order[a.state]||2) - (order[b.state]||2) || a.segment_id.localeCompare(b.segment_id);
+  }).forEach(s => {
+    const seg = segments.find(x => x.segment_id === s.segment_id) || {};
+    const name = seg.name || s.segment_id;
+
+    const reasons = (s.reason||'').split(',').filter(Boolean);
+    const reasonHtml = reasons.length
+      ? `<div class="seg-reason">Signals: <span>${reasons.join(' · ')}</span></div>` : '';
+
+    const altList = formatAltRoutes(s);
+    const altHtml = (s.state !== 'GREEN')
+      ? `<div class="alt-route-box"><strong>🔀 Alternate Route</strong>${altList.length ? altList.join('<br>') : 'Use bypass corridor / follow Traffic Authority signage'}</div>`
+      : '';
+
+    const floodBadge = seg.flood_prone ? '<span class="meta-chip">🌊 Flood-prone</span>' : '';
+    const cctvBadge  = seg.has_cctv    ? '<span class="meta-chip">📷 CCTV</span>'       : '';
+    const stageLabel = s.stage === 2 ? 'Stage 2 · Confirmed' : 'Stage 1 · Early Alert';
+    const stageBadge = s.stage > 0
+      ? `<span class="meta-chip ${s.stage===2?'stage-2':''}">${stageLabel}</span>` : '';
+    const confBadge  = s.confidence > 0
+      ? `<span class="meta-chip">Conf ${(s.confidence*100).toFixed(0)}%</span>` : '';
+
+    const authHtml = s.authority_action
+      ? `<div class="seg-reason">🚔 Authority: <span>${s.authority_action.toUpperCase()}</span></div>` : '';
+
+    const disruptionHtml = s.disruption_type
+      ? `<div class="seg-reason">Type: <span>${s.disruption_type.replace('_',' ')}</span></div>` : '';
+
+    grid.insertAdjacentHTML('beforeend', `
+      <div class="seg-card ${s.state}" data-seg="${s.segment_id}">
+        <div class="seg-header">
+          <div>
+            <div class="seg-id">${s.segment_id}</div>
+            <div class="seg-name">${name}</div>
+          </div>
+          <span class="state-pill ${s.state}">${s.state}</span>
+        </div>
+        <div class="seg-meta">
+          ${stageBadge}${confBadge}${floodBadge}${cctvBadge}
+        </div>
+        ${reasonHtml}${disruptionHtml}${authHtml}${altHtml}
+        <button class="btn-card-report" onclick="openModal('${s.segment_id}')">Report Issue →</button>
+      </div>
+    `);
+  });
+}
+
+// ── Data fetching ────────────────────────────────────────────────────────────
+
+async function fetchSegments() {
+  try {
+    const r = await fetch(`${API}/api/segments`);
+    if (r.ok) {
+      segments = await r.json();
+      const sel = document.getElementById('modal-segment');
+      sel.innerHTML = segments.map(s => `<option value="${s.segment_id}">${s.segment_id} — ${s.name}</option>`).join('');
+      renderMapLayers();
+    }
+  } catch {}
+}
+
+async function fetchStates() {
+  try {
+    const r = await fetch(`${API}/api/state`);
+    if (r.ok) render(await r.json());
+  } catch {}
+}
+
+// ── WebSocket ────────────────────────────────────────────────────────────────
+
+function connectWS() {
+  try {
+    ws = new WebSocket(WS_URL);
+    ws.onopen = () => {
+      wsAlive = true;
+      document.getElementById('ws-badge').className = 'live';
+      document.getElementById('ws-badge').textContent = '⬤ Live';
+    };
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'all_states') render(msg.data);
+        else if (msg.type === 'snapshot' && Array.isArray(msg.segments)) render(msg.segments);
+        else if (msg.type === 'state_update') render([msg.data]);
+        else if (msg.segment_id) render([msg]);
+      } catch {}
+    };
+    ws.onclose = () => {
+      wsAlive = false;
+      document.getElementById('ws-badge').className = 'poll';
+      document.getElementById('ws-badge').textContent = '⬤ Polling';
+      setTimeout(connectWS, 5000);
+    };
+    ws.onerror = () => ws.close();
+  } catch {
+    setTimeout(connectWS, 5000);
+  }
+}
+
+// ── Modal ────────────────────────────────────────────────────────────────────
+
+function openModal(segId) {
+  const overlay = document.getElementById('modal-overlay');
+  overlay.classList.add('open');
+  if (segId) {
+    const sel = document.getElementById('modal-segment');
+    for (const opt of sel.options) if (opt.value === segId) { opt.selected = true; break; }
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+async function submitComplaint() {
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  const payload = {
+    segment_id:    document.getElementById('modal-segment').value,
+    category:      document.getElementById('modal-category').value,
+    reporter_type: document.getElementById('modal-reporter').value,
+    description:   document.getElementById('modal-desc').value || undefined,
+    timestamp:     new Date().toISOString(),
+  };
+  try {
+    const r = await fetch(`${API}/api/ingest/complaint`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    if (r.ok) {
+      showToast('✅ Report submitted — thank you!');
+      closeModal();
+      document.getElementById('modal-desc').value = '';
+      fetchStates();
+    } else {
+      const err = await r.json();
+      showToast('❌ ' + (err.detail || 'Submission failed'));
+    }
+  } catch {
+    showToast('❌ Network error — try again');
+  }
+  btn.disabled = false;
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+
+(async () => {
+  initMap();
+  await fetchSegments();
+  await fetchStates();
+  connectWS();
+  setInterval(() => { if (!wsAlive) fetchStates(); }, 5000);
+})();
+</script>
+</body>
+</html>
