@@ -141,7 +141,11 @@ class StateService {
       this.ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data);
-          if (Array.isArray(msg)) {
+          if (msg && msg.type === "snapshot" && Array.isArray(msg.segments)) {
+            // D-1: Live WebSocket snapshot containing full segments array
+            this.state = msg.segments;
+            this.notifySubscribers();
+          } else if (Array.isArray(msg)) {
             this.state = msg;
             this.notifySubscribers();
           } else if (msg && msg.segment_id) {

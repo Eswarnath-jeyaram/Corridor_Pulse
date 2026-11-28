@@ -90,8 +90,26 @@ def main():
         print(f"--- Triggering Act {args.act} ---")
         if not args.mock_only:
             # Try live backend if available
-            payload = {"type": "reset" if args.act in (1, 5) else ("rain" if args.act == 2 else "cctv_anomaly"), "segment_id": args.segment}
-            send_live_event(args.api_base, payload)
+            if args.act in (1, 5):
+                # SIM-1: Reset all corridors
+                payload = {"type": "reset", "segment_id": "ALL"}
+                send_live_event(args.api_base, payload)
+            elif args.act == 2:
+                payload = {"type": "rain", "segment_id": args.segment, "params": {"rain_mm": 18.0}}
+                send_live_event(args.api_base, payload)
+            elif args.act == 3:
+                # SIM-2: Multi-signal sequence for args.segment to cleanly escalate to RED in live mode
+                events = [
+                    {"type": "rain", "segment_id": args.segment, "params": {"rain_mm": 18.0}},
+                    {"type": "speed", "segment_id": args.segment, "params": {"speed_kmh": 8.0, "count": 3}},
+                    {"type": "cctv_anomaly", "segment_id": args.segment, "params": {"anomaly_confidence": 0.65}},
+                    {"type": "complaint", "segment_id": args.segment, "params": {"category": "waterlogging"}},
+                ]
+                for p in events:
+                    send_live_event(args.api_base, p)
+            elif args.act == 4:
+                payload = {"type": "authority_close", "segment_id": args.segment}
+                send_live_event(args.api_base, payload)
         apply_local_scenario(args.act)
         return
 
@@ -119,6 +137,12 @@ def main():
         if not args.mock_only:
             send_live_event(args.api_base, payload)
         print(f"Injected CCTV anomaly confidence {args.cctv} for {args.segment}")
+
+    if args.complaint is not None:
+        payload = {"type": "complaint", "segment_id": args.segment, "params": {"category": args.complaint}}
+        if not args.mock_only:
+            send_live_event(args.api_base, payload)
+        print(f"Injected complaint '{args.complaint}' for {args.segment}")
 
 if __name__ == "__main__":
     main()
