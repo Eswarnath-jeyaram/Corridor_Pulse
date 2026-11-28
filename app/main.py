@@ -148,6 +148,10 @@ def init_db() -> None:
                 suggested_action TEXT NOT NULL,
                 priority_score REAL NOT NULL,
                 authority_action TEXT,
+                alt_routes TEXT,
+                alt_route_details TEXT,
+                authority_officer_id TEXT,
+                valid_until TEXT,
                 updated_at TEXT NOT NULL
             )
             """
@@ -164,6 +168,28 @@ def init_db() -> None:
             )
             """
         )
+        for col_name, col_type in [
+            ("alt_routes", "TEXT"),
+            ("alt_route_details", "TEXT"),
+            ("authority_officer_id", "TEXT"),
+            ("valid_until", "TEXT"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE central_state ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
+
+        for col_name, col_type in [
+            ("alt_routes", "TEXT"),
+            ("alt_route_details", "TEXT"),
+            ("authority_officer_id", "TEXT"),
+            ("valid_until", "TEXT"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE central_state ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
+
         ts = now_iso()
         for seg in segments:
             sid = seg.get("segment_id")
@@ -426,6 +452,28 @@ def apply_authority_action(act: AuthorityAction) -> dict:
         if not row:
             raise HTTPException(status_code=404, detail=f"Unknown segment_id: {act.segment_id}")
 
+        for col_name, col_type in [
+            ("alt_routes", "TEXT"),
+            ("alt_route_details", "TEXT"),
+            ("authority_officer_id", "TEXT"),
+            ("valid_until", "TEXT"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE central_state ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
+
+        for col_name, col_type in [
+            ("alt_routes", "TEXT"),
+            ("alt_route_details", "TEXT"),
+            ("authority_officer_id", "TEXT"),
+            ("valid_until", "TEXT"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE central_state ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
+
         ts = now_iso()
         if act.action == "close":
             conn.execute(
@@ -473,6 +521,28 @@ def apply_authority_action(act: AuthorityAction) -> dict:
 def simulate_event(sim: SimulatorEvent) -> dict:
     params = sim.params or {}
     with get_conn() as conn:
+        for col_name, col_type in [
+            ("alt_routes", "TEXT"),
+            ("alt_route_details", "TEXT"),
+            ("authority_officer_id", "TEXT"),
+            ("valid_until", "TEXT"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE central_state ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
+
+        for col_name, col_type in [
+            ("alt_routes", "TEXT"),
+            ("alt_route_details", "TEXT"),
+            ("authority_officer_id", "TEXT"),
+            ("valid_until", "TEXT"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE central_state ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
+
         ts = now_iso()
         if sim.type == "reset" and sim.segment_id == "ALL":
             conn.execute("DELETE FROM events_log")
@@ -492,6 +562,28 @@ def simulate_event(sim: SimulatorEvent) -> dict:
         row = conn.execute("SELECT * FROM central_state WHERE segment_id = ?", (sim.segment_id,)).fetchone()
         if not row:
             raise HTTPException(status_code=404, detail=f"Unknown segment_id: {sim.segment_id}")
+
+        for col_name, col_type in [
+            ("alt_routes", "TEXT"),
+            ("alt_route_details", "TEXT"),
+            ("authority_officer_id", "TEXT"),
+            ("valid_until", "TEXT"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE central_state ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
+
+        for col_name, col_type in [
+            ("alt_routes", "TEXT"),
+            ("alt_route_details", "TEXT"),
+            ("authority_officer_id", "TEXT"),
+            ("valid_until", "TEXT"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE central_state ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
 
         ts = now_iso()
         if sim.type == "reset":
