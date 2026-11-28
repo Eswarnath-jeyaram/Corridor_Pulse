@@ -1,0 +1,18 @@
+# TrafficSense — Track A: CCTV Runner Dependencies
+# Install: pip install -r requirements.txt
+# Tested with Python 3.10+
+
+# Core vision + tracking
+ultralytics>=8.3.0          # YOLOv8n / YOLO11n inference + ByteTrack tracking
+
+# Video I/O and display
+opencv-python>=4.9.0        # frame reading, bounding-box overlay, imshow preview
+
+# Backend communication
+requests>=2.31.0            # POST events to Track B /api/ingest/cctv
+
+# Environment variable loading
+python-dotenv>=1.0.0        # reads .env from repo root
+
+# numpy is a transitive dep of ultralytics — pinned here for stability
+numpy>=1.24.0,<2.0.0
